@@ -1,4 +1,4 @@
-name: Azure Bicep CI/CD
+name: Azure VM CI/CD
 
 on:
   push:
@@ -7,6 +7,7 @@ on:
   pull_request:
     branches: [ "main" ]
     paths: [ 'bicep/**' ]
+  workflow_dispatch: 
 
 permissions:
   id-token: write
@@ -18,11 +19,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Run Bicep Build
-        run: az bicep build --file bicep/main.bicep
+      - run: az bicep build --file bicep/main.bicep
 
   plan:
-    name: Azure What-If (Plan)
+    name: Azure What-If (Plan VMs)
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -32,18 +32,18 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      
       - name: Run What-If
         run: |
           az deployment sub what-if \
-            --name "gha-plan-${{ github.run_id }}" \
+            --name "gha-vm-plan-${{ github.run_id }}" \
             --location germanywestcentral \
-            --template-file bicep/main.bicep
+            --template-file bicep/main.bicep \
+            --parameters deployVms=true deployAks=false
 
   apply:
-    name: Azure Deployment (Apply)
+    name: Azure Deployment (Apply VMs)
     needs: plan
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,10 +52,10 @@ jobs:
           client-id: ${{ vars.AZURE_CLIENT_ID }}
           tenant-id: ${{ vars.AZURE_TENANT_ID }}
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-          
       - name: Run Deployment
         run: |
           az deployment sub create \
-            --name "gha-deploy-${{ github.run_id }}" \
+            --name "gha-vm-deploy-${{ github.run_id }}" \
             --location germanywestcentral \
-            --template-file bicep/main.bicep
+            --template-file bicep/main.bicep \
+            --parameters deployVms=true deployAks=false

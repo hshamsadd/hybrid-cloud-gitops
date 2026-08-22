@@ -1,0 +1,61 @@
+name: Azure AKS CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+    paths: [ 'bicep/**' ]
+  pull_request:
+    branches: [ "main" ]
+    paths: [ 'bicep/**' ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  lint:
+    name: Lint Bicep Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: az bicep build --file bicep/main.bicep
+
+  plan:
+    name: Azure What-If (Plan AKS)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Run What-If
+        run: |
+          az deployment sub what-if \
+            --name "gha-aks-plan-${{ github.run_id }}" \
+            --location germanywestcentral \
+            --template-file bicep/main.bicep \
+            --parameters deployVms=false deployAks=true
+
+  apply:
+    name: Azure Deployment (Apply AKS)
+    needs: plan
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Run Deployment
+        run: |
+          az deployment sub create \
+            --name "gha-aks-deploy-${{ github.run_id }}" \
+            --location germanywestcentral \
+            --template-file bicep/main.bicep \
+            --parameters deployVms=false deployAks=true

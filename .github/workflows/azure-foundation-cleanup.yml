@@ -1,0 +1,29 @@
+name: Azure Infrastructure Cleanup
+
+on:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  destroy:
+    name: Destroy Azure Resources
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to Azure via OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Delete Resource Group
+        run: |
+          echo "Initiating teardown of rg-bicep-foundation-prod..."
+          az group delete \
+            --name "rg-bicep-foundation-prod" \
+            --yes \
+            --no-wait
+          echo "Teardown initiated. Azure is deleting the resources in the background."
