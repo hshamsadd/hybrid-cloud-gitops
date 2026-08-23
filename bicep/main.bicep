@@ -1,6 +1,6 @@
 targetScope = 'subscription'
 
-param location string = 'germanywestcentral'
+param location string = 'swedencentral'
 param rgName string = 'rg-bicep-foundation-prod'
 param deployAks bool = false
 param deployVms bool = false
