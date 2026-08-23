@@ -8,13 +8,17 @@ param sshCaPubKey string
 
 var cloudInit = '''#cloud-config
 write_files:
-  - path: /etc/ssh/trusted-user-ca-keys.pub
+  - path: /etc/ssh/vault-user-ca.pub
     permissions: '0644'
     content: |
       ${sshCaPubKey}
+  - path: /etc/ssh/sshd_config.d/90-vault-user-ca.conf
+    permissions: '0644'
+    content: |
+      TrustedUserCAKeys /etc/ssh/vault-user-ca.pub    
 runcmd:
-  - echo "TrustedUserCAKeys /etc/ssh/trusted-user-ca-keys.pub" >> /etc/ssh/sshd_config
-  - systemctl restart ssh
+  - systemctl daemon-reload
+  - systemctl restart ssh ssh.socket
 '''
 
 resource publicIp 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
@@ -54,7 +58,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2023-03-01' = {
           publicKeys: [
             { 
               path: '/home/${adminUsername}/.ssh/authorized_keys'
-              keyData: sshCaPubKey // This satisfies Azure ARM preflight validation
+              keyData: sshCaPubKey
             }
           ] 
         }
