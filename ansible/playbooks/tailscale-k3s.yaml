@@ -39,7 +39,7 @@
           - k3s_agent_token | length > 0
         fail_msg: >-
           TAILSCALE_AUTH_KEY and K3S_AGENT_TOKEN must be supplied through environment variables or Ansible Vault.
-      no_log: true
+      #no_log: true
 
   tasks:
     - name: Gather system facts
