@@ -23,8 +23,8 @@
     # ENTERPRISE BEST PRACTICE: Fallback to the dedicated pipeline key path
     bastion_ssh_key: "/home/runner/.ssh/id_ed25519_github_actions"
 
-    k3s_node_name: "worker-3"
-    k3s_version: "v1.35.5+k3s1"
+    k3s_node_name: "{{ inventory_hostname }}"
+    k3s_version: "v1.36.3+k3s1"
 
   pre_tasks:
     - name: Wait for VM to be reachable through SSH bastion
