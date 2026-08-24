@@ -1,2 +1,3 @@
 ansible_user: zshamsadd
-ansible_ssh_common_args: '-o CertificateFile=~/.ssh/vault-certificates/azure-nodes-cert.pub -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o IdentityAgent=none'
+
+#ansible_ssh_common_args: '-o CertificateFile=~/.ssh/vault-certificates/azure-nodes-cert.pub -o StrictHostKeyChecking=no -o IdentitiesOnly=yes -o IdentityAgent=none'

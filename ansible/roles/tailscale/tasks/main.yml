@@ -47,7 +47,7 @@
       - tailscale
       - up
       - "--auth-key={{ tailscale_auth_key }}"
-      - "--hostname={{ k3s_node_name }}"
+      - "--hostname={{ tailscale_hostname | default(inventory_hostname) }}"
       - "--accept-dns=true"
   when: tailscale_existing_connection.rc != 0
   no_log: true
