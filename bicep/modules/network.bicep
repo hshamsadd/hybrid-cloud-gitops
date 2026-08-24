@@ -15,7 +15,7 @@ resource nsg 'Microsoft.Network/networkSecurityGroups@2023-04-01' = {
           protocol: 'Tcp'
           sourcePortRange: '*'
           destinationPortRange: '22'
-          sourceAddressPrefix: '*' // Allows Ansible to reach it
+          sourceAddressPrefix: '*'
           destinationAddressPrefix: '*'
         }
       }
