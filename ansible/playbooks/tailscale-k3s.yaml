@@ -20,7 +20,6 @@
     k3s_control_plane_user: "zshamsadd"
     k3s_server_url: "https://100.76.59.49:6443"
 
-    # ENTERPRISE BEST PRACTICE: Fallback to the dedicated pipeline key path
     bastion_ssh_key: "/home/runner/.ssh/id_ed25519_github_actions"
 
     k3s_node_name: "{{ inventory_hostname }}"

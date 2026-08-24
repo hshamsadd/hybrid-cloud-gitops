@@ -48,21 +48,35 @@ jobs:
           tags: tag:ci
           ping: debian.tailfb03f6.ts.net
       - name: Debug GitHub OIDC token claims
+        continue-on-error: true
         shell: bash
         run: |
           set -euo pipefail
 
-          : "${ACTIONS_ID_TOKEN_REQUEST_URL:?}"
-          : "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:?}"
+          if [[ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" || -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]; then
+            echo "ACTIONS_ID_TOKEN_REQUEST_* env vars unavailable; skipping OIDC debug."
+            exit 0
+          fi
 
-          response="$(curl -sSf \
+          if ! response="$(curl -sSf \
             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=vault://homelab")"
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=vault://homelab")"; then
+            echo "Unable to fetch OIDC token for debug; skipping."
+            exit 0
+          fi
 
           token="$(jq -r '.value' <<< "$response")"
+          if [[ -z "$token" || "$token" == "null" ]]; then
+            echo "OIDC token response missing value; skipping."
+            exit 0
+          fi
 
           # Decode JWT payload
-          payload="$(printf '%s' "$token" | cut -d. -f2 | base64 -d 2>/dev/null | jq .)"
+          payload="$(printf '%s' "$token" | cut -d. -f2 | base64 -d 2>/dev/null | jq . 2>/dev/null || true)"
+          if [[ -z "$payload" || "$payload" == "null" ]]; then
+            echo "Failed to decode OIDC token payload; skipping."
+            exit 0
+          fi
           echo "$payload"
       - name: Authenticate to Vault
         uses: hashicorp/vault-action@v4.0.0
@@ -203,8 +217,11 @@ jobs:
             VM_NAME=$(_jq '.name')
             VM_PUBLIC_IP=$(_jq '.ip')
 
+            # Calculate the dynamic K3s name early (e.g. cloud-node-02 -> worker-02)
+            K3S_NODE_NAME="worker-${VM_NAME##*-}"
+
             echo "=========================================="
-            echo "Processing VM: $VM_NAME at $VM_PUBLIC_IP"
+            echo "Processing VM: $VM_NAME (K3s: $K3S_NODE_NAME) at $VM_PUBLIC_IP"
             echo "=========================================="
 
             VM_PUBLIC_SSH=(
@@ -234,23 +251,23 @@ jobs:
               exit 1
             fi
 
-            echo "Creating one-time Tailscale auth key for $VM_NAME..."
+            echo "Creating one-time Tailscale auth key for $K3S_NODE_NAME..."
             TAILSCALE_AUTH_KEY="$(scripts/tailscale/create-node-auth-key.sh tag:k3s-worker)"
             echo "::add-mask::$TAILSCALE_AUTH_KEY"
             TAILSCALE_AUTH_KEY_B64="$(printf '%s' "$TAILSCALE_AUTH_KEY" | base64 -w0)"
 
-            echo "Bootstrapping $VM_NAME..."
+            echo "Bootstrapping $VM_NAME as $K3S_NODE_NAME..."
             "${VM_PUBLIC_SSH[@]}" \
               sudo -n \
               env TAILSCALE_AUTH_KEY_B64="${TAILSCALE_AUTH_KEY_B64}" \
-              K3S_NODE_NAME="${VM_NAME}" \
+              K3S_NODE_NAME="${K3S_NODE_NAME}" \
               SSH_CA_B64="${SSH_CA_B64}" \
               bash -s < scripts/ci/bootstrap-node.sh
 
-            echo "Waiting for Tailscale MagicDNS for $VM_NAME..."
+            echo "Waiting for Tailscale MagicDNS for $K3S_NODE_NAME..."
             VM_TS_IP=""
             for attempt in $(seq 1 60); do
-              VM_TS_IP="$(getent ahostsv4 "$VM_NAME" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
+              VM_TS_IP="$(getent ahostsv4 "$K3S_NODE_NAME" 2>/dev/null | awk 'NR == 1 { print $1 }' || true)"
               if [[ -n "$VM_TS_IP" ]]; then
                 break
               fi
@@ -258,11 +275,11 @@ jobs:
             done
 
             if [[ -z "$VM_TS_IP" ]]; then
-              echo "ERROR: Could not resolve $VM_NAME." >&2
+              echo "ERROR: Could not resolve $K3S_NODE_NAME." >&2
               exit 1
             fi
 
-            tailscale ping --until-direct=false -c 3 "$VM_NAME"
+            tailscale ping --until-direct=false -c 3 "$K3S_NODE_NAME"
 
             CONTROL_SSH=(
               ssh
@@ -275,14 +292,14 @@ jobs:
               "${K3S_CONTROL_USER}@${K3S_CONTROL_HOST}"
             )
 
-            echo "Preparing Kubernetes node ${VM_NAME}..."
-            "${CONTROL_SSH[@]}" sudo -n /usr/local/sbin/homelab-k3s-ci delete "$VM_NAME"
+            echo "Preparing Kubernetes node ${K3S_NODE_NAME}..."
+            "${CONTROL_SSH[@]}" sudo -n /usr/local/sbin/homelab-k3s-ci delete "$K3S_NODE_NAME"
 
             K3S_JOIN_TOKEN="$("${CONTROL_SSH[@]}" sudo -n /usr/local/sbin/homelab-k3s-ci token)"
             echo "::add-mask::$K3S_JOIN_TOKEN"
 
             INVENTORY="$RUNNER_TEMP/${VM_NAME}-inventory.yml"
-            cat > "$INVENTORY" <<INVENTORY_EOF
+          cat > "$INVENTORY" <<INVENTORY_EOF
           all:
             children:
               k3s_workers:
@@ -301,14 +318,14 @@ jobs:
 
             export TAILSCALE_AUTH_KEY
             export K3S_JOIN_TOKEN
-            export K3S_NODE_NAME="$VM_NAME"
+            export K3S_NODE_NAME
 
-            echo "Running Ansible for $VM_NAME..."
+            echo "Running Ansible for $VM_NAME (as $K3S_NODE_NAME)..."
             ansible -i "$INVENTORY" k3s_workers -m ansible.builtin.wait_for_connection -a "timeout=600 sleep=5 connect_timeout=10"
             ansible-playbook -i "$INVENTORY" ansible/playbooks/configure-k3s-worker.yml
 
-            "${CONTROL_SSH[@]}" sudo -n /usr/local/sbin/homelab-k3s-ci finalize "$VM_NAME"
-            echo "Successfully completed deployment for $VM_NAME!"
+            "${CONTROL_SSH[@]}" sudo -n /usr/local/sbin/homelab-k3s-ci finalize "$K3S_NODE_NAME"
+            echo "Successfully completed deployment for $K3S_NODE_NAME!"
           done
 
       - name: Remove temporary credentials
@@ -322,6 +339,7 @@ jobs:
             "$RUNNER_TEMP/azure-vm-cert.pub" \
             "$RUNNER_TEMP/azure-known-hosts" \
             "$RUNNER_TEMP"/*-inventory.yml
+
 
 # name: Azure VM CI/CD
 
@@ -372,7 +390,37 @@ jobs:
 #           audience: ${{ vars.TS_WIF_AUDIENCE }}
 #           tags: tag:ci
 #           ping: debian.tailfb03f6.ts.net
+#       - name: Debug GitHub OIDC token claims
+#         continue-on-error: true
+#         shell: bash
+#         run: |
+#           set -euo pipefail
 
+#           if [[ -z "${ACTIONS_ID_TOKEN_REQUEST_URL:-}" || -z "${ACTIONS_ID_TOKEN_REQUEST_TOKEN:-}" ]]; then
+#             echo "ACTIONS_ID_TOKEN_REQUEST_* env vars unavailable; skipping OIDC debug."
+#             exit 0
+#           fi
+
+#           if ! response="$(curl -sSf \
+#             -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+#             "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=vault://homelab")"; then
+#             echo "Unable to fetch OIDC token for debug; skipping."
+#             exit 0
+#           fi
+
+#           token="$(jq -r '.value' <<< "$response")"
+#           if [[ -z "$token" || "$token" == "null" ]]; then
+#             echo "OIDC token response missing value; skipping."
+#             exit 0
+#           fi
+
+#           # Decode JWT payload
+#           payload="$(printf '%s' "$token" | cut -d. -f2 | base64 -d 2>/dev/null | jq . 2>/dev/null || true)"
+#           if [[ -z "$payload" || "$payload" == "null" ]]; then
+#             echo "Failed to decode OIDC token payload; skipping."
+#             exit 0
+#           fi
+#           echo "$payload"
 #       - name: Authenticate to Vault
 #         uses: hashicorp/vault-action@v4.0.0
 #         with:
@@ -591,7 +639,7 @@ jobs:
 #             echo "::add-mask::$K3S_JOIN_TOKEN"
 
 #             INVENTORY="$RUNNER_TEMP/${VM_NAME}-inventory.yml"
-#             cat > "$INVENTORY" <<INVENTORY_EOF
+#           cat > "$INVENTORY" <<INVENTORY_EOF
 #           all:
 #             children:
 #               k3s_workers:
@@ -610,7 +658,7 @@ jobs:
 
 #             export TAILSCALE_AUTH_KEY
 #             export K3S_JOIN_TOKEN
-#             export K3S_NODE_NAME="$VM_NAME"
+#             export K3S_NODE_NAME="worker-${VM_NAME##*-}"
 
 #             echo "Running Ansible for $VM_NAME..."
 #             ansible -i "$INVENTORY" k3s_workers -m ansible.builtin.wait_for_connection -a "timeout=600 sleep=5 connect_timeout=10"
@@ -630,67 +678,4 @@ jobs:
 #             "$RUNNER_TEMP/azure-control-cert.pub" \
 #             "$RUNNER_TEMP/azure-vm-cert.pub" \
 #             "$RUNNER_TEMP/azure-known-hosts" \
-#             $RUNNER_TEMP/*-inventory.yml
-
-
-
-# name: Azure VM CI/CD
-# on:
-#   push:
-#     branches: [ "main" ]
-#     paths: [ 'bicep/**' ]
-#   pull_request:
-#     branches: [ "main" ]
-#     paths: [ 'bicep/**' ]
-#   workflow_dispatch: 
-
-# permissions:
-#   id-token: write
-#   contents: read
-
-# jobs:
-#   lint:
-#     name: Lint Bicep Code
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#       - run: az bicep build --file bicep/main.bicep
-
-#   plan:
-#     name: Azure What-If (Plan VMs)
-#     needs: lint
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#       - uses: azure/login@v2
-#         with:
-#           client-id: ${{ vars.AZURE_CLIENT_ID }}
-#           tenant-id: ${{ vars.AZURE_TENANT_ID }}
-#           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-#       - name: Run What-If
-#         run: |
-#           az deployment sub what-if \
-#             --name "gha-vm-plan-${{ github.run_id }}" \
-#             --location germanywestcentral \
-#             --template-file bicep/main.bicep \
-#             --parameters deployVms=true deployAks=false
-
-#   apply:
-#     name: Azure Deployment (Apply VMs)
-#     needs: plan
-#     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-#       - uses: azure/login@v2
-#         with:
-#           client-id: ${{ vars.AZURE_CLIENT_ID }}
-#           tenant-id: ${{ vars.AZURE_TENANT_ID }}
-#           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-#       - name: Run Deployment
-#         run: |
-#           az deployment sub create \
-#             --name "gha-vm-deploy-${{ github.run_id }}" \
-#             --location swedencentral \
-#             --template-file bicep/main.bicep \
-#             --parameters deployVms=true deployAks=false
+#             "$RUNNER_TEMP"/*-inventory.yml

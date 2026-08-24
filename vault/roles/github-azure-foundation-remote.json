@@ -1,17 +1,14 @@
 {
   "role_type": "jwt",
   "user_claim": "actor",
-  "bound_audiences": [
-    "vault://homelab"
-  ],
-  "bound_subject": "repo:hshamsadd/hybrid-cloud-gitops:environment:homelab-production",
+  "bound_audiences": ["vault://homelab"],
+  "bound_subject": "repo:hshamsadd@209839117/hybrid-cloud-gitops@1291238687:environment:homelab-production",
   "bound_claims_type": "string",
   "bound_claims": {
     "repository": "hshamsadd/hybrid-cloud-gitops",
-    "ref": "refs/heads/main",
     "environment": "homelab-production",
-    "runner_environment": "github-hosted",
-    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/azure-compute-foundation.yml@refs/heads/main"
+    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/azure-compute-foundation.yml@refs/heads/main",
+    "runner_environment": "github-hosted"
   },
   "token_policies": [
     "github-azure-foundation-prod"
