@@ -1,12 +1,15 @@
 targetScope = 'subscription'
 
-param location string = 'swedencentral'
-param rgName string = 'rg-bicep-foundation-prod'
-param deployAks bool = false
-param deployVms bool = false
+param location string
+param rgName string
+param deployAks bool
+param deployVms bool
 
 @secure()
 param adminSshKey string
+param adminUsername string
+
+param vmConfigs array
 
 resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
   name: rgName
@@ -22,33 +25,19 @@ module vnetwork 'modules/network.bicep' = if (deployVms || deployAks) {
   }
 }
 
-module vm_amd 'modules/vm.bicep' = if (deployVms) {
+module vms 'modules/vm.bicep' = [for vm in vmConfigs: if (deployVms) {
   scope: rg
-  name: 'vmAmdDeployment'
+  name: 'vmDeployment-${vm.name}'
   params: {
     location: location
-    vmName: 'cloud-node-02'
+    vmName: vm.name
     subnetId: deployVms ? vnetwork!.outputs.subnetId : ''
-    adminUsername: 'zshamsadd'
-    vmSize: 'Standard_B2ats_v2'
-    imageSku: '22_04-lts-gen2'
+    adminUsername: adminUsername
+    vmSize: vm.vmSize
+    imageSku: vm.imageSku
     adminSshKey: adminSshKey
   }
-}
-
-module vm_arm 'modules/vm.bicep' = if (deployVms) {
-  scope: rg
-  name: 'vmArmDeployment'
-  params: {
-    location: location
-    vmName: 'cloud-node-03'
-    subnetId: deployVms ? vnetwork!.outputs.subnetId : ''
-    adminUsername: 'zshamsadd'
-    vmSize: 'Standard_B2pts_v2'
-    imageSku: '22_04-lts-arm64'
-    adminSshKey: adminSshKey
-  }
-}
+}]
 
 module aks 'modules/aks.bicep' = if (deployAks) {
   scope: rg
@@ -59,7 +48,6 @@ module aks 'modules/aks.bicep' = if (deployAks) {
   }
 }
 
-
 // targetScope = 'subscription'
 
 // param location string = 'swedencentral'
@@ -67,13 +55,13 @@ module aks 'modules/aks.bicep' = if (deployAks) {
 // param deployAks bool = false
 // param deployVms bool = false
 
-// var vaultCaPubKey = trim(loadTextContent('../vault/ssh/vault-ssh-user-ca.pub'))
+// @secure()
+// param adminSshKey string
 
 // resource rg 'Microsoft.Resources/resourceGroups@2022-09-01' = {
 //   name: rgName
 //   location: location
 // }
-
 
 // module vnetwork 'modules/network.bicep' = if (deployVms || deployAks) {
 //   scope: rg
@@ -84,7 +72,6 @@ module aks 'modules/aks.bicep' = if (deployAks) {
 //   }
 // }
 
-// // Node 1: AMD Architecture (Free Tier: 2 vCPU / 1GB RAM)
 // module vm_amd 'modules/vm.bicep' = if (deployVms) {
 //   scope: rg
 //   name: 'vmAmdDeployment'
@@ -95,11 +82,10 @@ module aks 'modules/aks.bicep' = if (deployAks) {
 //     adminUsername: 'zshamsadd'
 //     vmSize: 'Standard_B2ats_v2'
 //     imageSku: '22_04-lts-gen2'
-//     sshCaPubKey: vaultCaPubKey
+//     adminSshKey: adminSshKey
 //   }
 // }
 
-// // Node 2: ARM Architecture (Free Tier: 2 vCPU / 1GB RAM)
 // module vm_arm 'modules/vm.bicep' = if (deployVms) {
 //   scope: rg
 //   name: 'vmArmDeployment'
@@ -110,10 +96,9 @@ module aks 'modules/aks.bicep' = if (deployAks) {
 //     adminUsername: 'zshamsadd'
 //     vmSize: 'Standard_B2pts_v2'
 //     imageSku: '22_04-lts-arm64'
-//     sshCaPubKey: vaultCaPubKey
+//     adminSshKey: adminSshKey
 //   }
 // }
-
 
 // module aks 'modules/aks.bicep' = if (deployAks) {
 //   scope: rg

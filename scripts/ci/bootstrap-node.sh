@@ -29,7 +29,6 @@ fi
 if [[ -n "${TAILSCALE_AUTH_KEY_B64:-}" ]]; then
   TS_AUTH_KEY="$(printf '%s' "${TAILSCALE_AUTH_KEY_B64}" | base64 -d)"
   
-  # SPLIT IDENTITY: Use TAILSCALE_HOSTNAME (cloud-node-02). Fallback to K3S_NODE_NAME for safety.
   TS_HOSTNAME="${TAILSCALE_HOSTNAME:-${K3S_NODE_NAME:-$(hostname)}}"
 
   if tailscale status >/dev/null 2>&1; then
