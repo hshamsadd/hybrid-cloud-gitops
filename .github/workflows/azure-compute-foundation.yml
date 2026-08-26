@@ -249,20 +249,44 @@ jobs:
             TAILSCALE_AUTH_KEY_B64="$(printf '%s' "$TAILSCALE_AUTH_KEY" | base64 -w0)"
 
             echo "Bootstrapping $VM_NAME securely via Azure Run-Command..."
-            
-      - name: Create bootstrap wrapper
-        run: |
-          {
-            echo '#!/bin/bash'
-            echo 'export TAILSCALE_AUTH_KEY_B64="'"${TAILSCALE_AUTH_KEY_B64}"'"'
-            echo 'export TAILSCALE_HOSTNAME="'"${VM_NAME}"'"'
-            echo 'export K3S_NODE_NAME="'"${K3S_NODE_NAME}"'"'
-            echo 'export SSH_CA_B64="'"${SSH_CA_B64}"'"'
-            echo
-            cat scripts/ci/bootstrap-node.sh
-          } > "runner_${VM_NAME}.sh"
 
-          chmod +x "runner_${VM_NAME}.sh"
+            echo "Waiting for Azure VM Agent on $VM_NAME..."
+
+            for attempt in {1..30}; do
+              agent_status="$(
+                az vm get-instance-view \
+                  --resource-group "$AZURE_RG_NAME" \
+                  --name "$VM_NAME" \
+                  --query "instanceView.vmAgent.statuses[?code=='ProvisioningState/succeeded'].displayStatus | [0]" \
+                  --output tsv
+              )"
+
+              if [[ "$agent_status" == "Provisioning succeeded" ]]; then
+                echo "Azure VM Agent is ready on $VM_NAME."
+                break
+              fi
+
+              echo "VM Agent not ready yet (attempt $attempt/30). Waiting 10s..."
+              sleep 10
+
+              if [[ "$attempt" -eq 30 ]]; then
+                echo "ERROR: Azure VM Agent did not become ready on $VM_NAME." >&2
+                exit 1
+              fi
+            done
+
+            # Wrap the bootstrap script with our variables
+            {
+              echo '#!/bin/bash'
+              echo 'export TAILSCALE_AUTH_KEY_B64="'"${TAILSCALE_AUTH_KEY_B64}"'"'
+              echo 'export TAILSCALE_HOSTNAME="'"${VM_NAME}"'"'
+              echo 'export K3S_NODE_NAME="'"${K3S_NODE_NAME}"'"'
+              echo 'export SSH_CA_B64="'"${SSH_CA_B64}"'"'
+              echo
+              cat scripts/ci/bootstrap-node.sh
+            } > "runner_${VM_NAME}.sh"
+
+            chmod +x "runner_${VM_NAME}.sh"
 
             # Inject directly into the VM (Requires NO public IP!)
             az vm run-command invoke \
