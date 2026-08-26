@@ -250,14 +250,19 @@ jobs:
 
             echo "Bootstrapping $VM_NAME securely via Azure Run-Command..."
             
-                      # Wrap the bootstrap script with our variables
-          cat <<WRAPPER_EOF > "runner_${VM_NAME}.sh"
-                      export TAILSCALE_AUTH_KEY_B64="${TAILSCALE_AUTH_KEY_B64}"
-                      export TAILSCALE_HOSTNAME="${VM_NAME}"
-                      export K3S_NODE_NAME="${K3S_NODE_NAME}"
-                      export SSH_CA_B64="${SSH_CA_B64}"
-                      $(cat scripts/ci/bootstrap-node.sh)
-          WRAPPER_EOF
+      - name: Create bootstrap wrapper
+        run: |
+          {
+            echo '#!/bin/bash'
+            echo 'export TAILSCALE_AUTH_KEY_B64="'"${TAILSCALE_AUTH_KEY_B64}"'"'
+            echo 'export TAILSCALE_HOSTNAME="'"${VM_NAME}"'"'
+            echo 'export K3S_NODE_NAME="'"${K3S_NODE_NAME}"'"'
+            echo 'export SSH_CA_B64="'"${SSH_CA_B64}"'"'
+            echo
+            cat scripts/ci/bootstrap-node.sh
+          } > "runner_${VM_NAME}.sh"
+
+          chmod +x "runner_${VM_NAME}.sh"
 
             # Inject directly into the VM (Requires NO public IP!)
             az vm run-command invoke \
