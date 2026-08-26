@@ -1,4 +1,4 @@
-- name: Test VM connection and sudo privileges
+- name: Test VM connection and configure base system
   hosts: all
   become: true
   gather_facts: false
@@ -26,9 +26,9 @@
           - ca-certificates
         state: present
         update_cache: true
-        cache_valid_time: 3600 # Speeds up execution by skipping updates if run within the hour
+        cache_valid_time: 3600
 
-    - name: Create test file with root ownership
+    - name: Create CI/CD deployment verification file
       ansible.builtin.copy:
         content: |
           VM configuration completed successfully by Ansible.
@@ -38,11 +38,11 @@
         group: root
         mode: "0644"
 
-    - name: Confirm sudo test file exists
+    - name: Verify test file exists
       ansible.builtin.stat:
         path: /root/ci_cd_success.txt
       register: sudo_test_file
 
-    - name: Display deployment lifecycle test result
+    - name: Display verification result
       ansible.builtin.debug:
-        msg: "Connection and sudo test succeeded. Test file verification state: {{ sudo_test_file.stat.exists }}"
+        msg: "Verification state: {{ sudo_test_file.stat.exists }}"

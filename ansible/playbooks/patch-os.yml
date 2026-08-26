@@ -1,0 +1,52 @@
+- name: Perform OS Updates, Rolling Patching, and K8s Lifecycle
+  hosts: all
+  become: true
+  gather_facts: true
+  serial: 1 # CRITICAL: Patches one node completely before moving to the next
+
+  vars:
+    # Dynamically map Azure VM names (cloud-node-03) to K3s node names (worker-03)
+    k3s_node_name: "{{ inventory_hostname | replace('cloud-node', 'worker') }}"
+
+  tasks:
+    - name: Cordon the Kubernetes node (Stop scheduling new pods)
+      delegate_to: localhost
+      become: false
+      ansible.builtin.command: "kubectl cordon {{ k3s_node_name }}"
+      ignore_errors: true # Prevents playbook crash if you run this from a machine without kubeconfig
+
+    - name: Drain the Kubernetes node (Evict workloads safely)
+      delegate_to: localhost
+      become: false
+      ansible.builtin.command: >
+        kubectl drain {{ k3s_node_name }} --ignore-daemonsets --delete-emptydir-data --force --grace-period=60 --timeout=5m
+      ignore_errors: true
+
+    - name: Update APT cache and run full OS upgrade
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+        upgrade: dist
+        autoremove: true
+        autoclean: true
+
+    - name: Check if a reboot is required (e.g., new kernel)
+      ansible.builtin.stat:
+        path: /var/run/reboot-required
+      register: reboot_required_file
+
+    - name: Reboot the VM if necessary
+      ansible.builtin.reboot:
+        msg: "Rebooting for OS updates applied by Ansible"
+        connect_timeout: 5
+        reboot_timeout: 600
+        pre_reboot_delay: 0
+        post_reboot_delay: 30
+        test_command: uptime
+      when: reboot_required_file.stat.exists
+
+    - name: Uncordon the Kubernetes node (Resume scheduling)
+      delegate_to: localhost
+      become: false
+      ansible.builtin.command: "kubectl uncordon {{ k3s_node_name }}"
+      ignore_errors: true
