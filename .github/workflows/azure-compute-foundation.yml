@@ -252,7 +252,7 @@ jobs:
 
             echo "Waiting for Azure VM Agent on $VM_NAME..."
 
-            for attempt in {1..30}; do
+            for attempt in {1..100}; do
               agent_status="$(
                 az vm get-instance-view \
                   --resource-group "$AZURE_RG_NAME" \
@@ -261,21 +261,29 @@ jobs:
                   --output tsv
               )"
 
-              if [[ "$agent_status" == "Provisioning succeeded" ]]; then
+              if [[ "$agent_status" == "Ready" ]]; then
                 echo "Azure VM Agent is ready on $VM_NAME."
                 break
               fi
 
-              echo "VM Agent not ready yet (attempt $attempt/30). Waiting 10s..."
+              echo "VM Agent status: '${agent_status:-not reported}' (attempt $attempt/100). Waiting 10s..."
               sleep 10
 
-              if [[ "$attempt" -eq 30 ]]; then
+              if [[ "$attempt" -eq 100 ]]; then
                 echo "ERROR: Azure VM Agent did not become ready on $VM_NAME." >&2
+
+                az vm get-instance-view \
+                  --resource-group "$AZURE_RG_NAME" \
+                  --name "$VM_NAME" \
+                  --query 'instanceView.vmAgent' \
+                  --output json >&2
+
                 exit 1
               fi
             done
 
             # Wrap the bootstrap script with our variables
+            
             {
               echo '#!/bin/bash'
               echo 'export TAILSCALE_AUTH_KEY_B64="'"${TAILSCALE_AUTH_KEY_B64}"'"'
