@@ -6,13 +6,6 @@ param vmSize string
 param imageSku string
 param adminSshKey string
 
-resource publicIp 'Microsoft.Network/publicIPAddresses@2023-04-01' = {
-  name: '${vmName}-pip'
-  location: location
-  sku: { name: 'Standard' }
-  properties: { publicIPAllocationMethod: 'Static' }
-}
-
 resource nic 'Microsoft.Network/networkInterfaces@2023-04-01' = {
   name: '${vmName}-nic'
   location: location
@@ -20,9 +13,8 @@ resource nic 'Microsoft.Network/networkInterfaces@2023-04-01' = {
     ipConfigurations: [{
       name: 'ipconfig1'
       properties: {
-        subnet: { id: subnetId }
         privateIPAllocationMethod: 'Dynamic'
-        publicIPAddress: { id: publicIp.id }
+        subnet: { id: subnetId }
       }
     }]
   }
@@ -55,5 +47,3 @@ resource vm 'Microsoft.Compute/virtualMachines@2023-03-01' = {
     networkProfile: { networkInterfaces: [{ id: nic.id }] }
   }
 }
-
-output publicIp string = publicIp.properties.ipAddress

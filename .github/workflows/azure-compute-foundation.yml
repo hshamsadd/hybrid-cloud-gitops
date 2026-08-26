@@ -223,9 +223,9 @@ jobs:
 
           echo "Querying Azure for deployed VMs..."
           VMS_JSON="$(
-            az vm list-ip-addresses \
+            az vm list \
               -g "$AZURE_RG_NAME" \
-              --query "[?starts_with(virtualMachine.name, '${AZURE_VM_PREFIX}')].{name:virtualMachine.name, ip:virtualMachine.network.publicIpAddresses[0].ipAddress}" \
+              --query "[?starts_with(name, '${AZURE_VM_PREFIX}')].{name:name}" \
               -o json
           )"
 
@@ -236,54 +236,37 @@ jobs:
               echo ${row} | base64 --decode | jq -r ${1}
             }
             VM_NAME=$(_jq '.name')
-            VM_PUBLIC_IP=$(_jq '.ip')
 
             K3S_NODE_NAME="worker-${VM_NAME##*-}"
 
             echo "=========================================="
-            echo "Processing VM: $VM_NAME (K3s: $K3S_NODE_NAME) at $VM_PUBLIC_IP"
+            echo "Processing VM: $VM_NAME (K3s: $K3S_NODE_NAME) via Azure Fabric"
             echo "=========================================="
-
-            VM_PUBLIC_SSH=(
-              ssh
-              -o IdentitiesOnly=yes
-              -o IdentityAgent=none
-              -o CertificateFile="$VM_CERT"
-              -o StrictHostKeyChecking=accept-new
-              -o UserKnownHostsFile="$KNOWN_HOSTS"
-              -o ConnectTimeout=10
-              -i "$SSH_KEY"
-              "${VM_USER}@${VM_PUBLIC_IP}"
-            )
-
-            echo "Waiting for $VM_NAME SSH access..."
-            VM_SSH_READY="false"
-            for attempt in $(seq 1 60); do
-              if "${VM_PUBLIC_SSH[@]}" true 2>/dev/null; then
-                VM_SSH_READY="true"
-                break
-              fi
-              sleep 10
-            done
-
-            if [[ "$VM_SSH_READY" != "true" ]]; then
-              echo "ERROR: $VM_NAME did not become reachable." >&2
-              exit 1
-            fi
 
             echo "Creating one-time Tailscale auth key for $VM_NAME..."
             TAILSCALE_AUTH_KEY="$(scripts/tailscale/create-node-auth-key.sh tag:k3s-worker)"
             echo "::add-mask::$TAILSCALE_AUTH_KEY"
             TAILSCALE_AUTH_KEY_B64="$(printf '%s' "$TAILSCALE_AUTH_KEY" | base64 -w0)"
 
-            echo "Bootstrapping $VM_NAME as $K3S_NODE_NAME..."
-            "${VM_PUBLIC_SSH[@]}" \
-              sudo -n \
-              env TAILSCALE_AUTH_KEY_B64="${TAILSCALE_AUTH_KEY_B64}" \
-              TAILSCALE_HOSTNAME="${VM_NAME}" \
-              K3S_NODE_NAME="${K3S_NODE_NAME}" \
-              SSH_CA_B64="${SSH_CA_B64}" \
-              bash -s < scripts/ci/bootstrap-node.sh
+            echo "Bootstrapping $VM_NAME securely via Azure Run-Command..."
+            
+            # Wrap the bootstrap script with our variables
+            cat <<WRAPPER_EOF > "runner_${VM_NAME}.sh"
+            export TAILSCALE_AUTH_KEY_B64="${TAILSCALE_AUTH_KEY_B64}"
+            export TAILSCALE_HOSTNAME="${VM_NAME}"
+            export K3S_NODE_NAME="${K3S_NODE_NAME}"
+            export SSH_CA_B64="${SSH_CA_B64}"
+            $(cat scripts/ci/bootstrap-node.sh)
+            WRAPPER_EOF
+
+            # Inject directly into the VM (Requires NO public IP!)
+            az vm run-command invoke \
+              --resource-group "$AZURE_RG_NAME" \
+              --name "${VM_NAME}" \
+              --command-id RunShellScript \
+              --scripts "@runner_${VM_NAME}.sh"
+              
+            rm "runner_${VM_NAME}.sh"
 
             VM_TS_IP="$(scripts/ci/wait-for-tailscale-dns.sh "$VM_NAME")"
 
