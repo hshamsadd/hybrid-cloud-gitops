@@ -159,13 +159,8 @@ jobs:
             --location germanywestcentral \
             --template-file bicep/main.bicep \
             --parameters bicep/production.bicepparam \
-            --parameters adminSshKey="${RUNNER_SSH_PUB_KEY}" adminUsername="${VM_USER}"
+            --parameters deployAks=false adminSshKey="${RUNNER_SSH_PUB_KEY}" adminUsername="${VM_USER}"
 
-      # az deployment sub what-if \
-          #   --name "gha-vm-plan-${{ github.run_id }}" \
-          #   --location germanywestcentral \
-          #   --template-file bicep/main.bicep \
-          #   --parameters deployVms=true deployAks=false adminSshKey="${RUNNER_SSH_PUB_KEY}"
 
       - name: Bicep Deployment (Apply VMs)
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'apply'
@@ -182,13 +177,7 @@ jobs:
             --location swedencentral \
             --template-file bicep/main.bicep \
             --parameters bicep/production.bicepparam \
-            --parameters adminSshKey="${RUNNER_SSH_PUB_KEY}" adminUsername="${VM_USER}"
-
-        # az deployment sub create \
-          #   --name "gha-vm-deploy-${{ github.run_id }}" \
-          #   --location swedencentral \
-          #   --template-file bicep/main.bicep \
-          #   --parameters deployVms=true deployAks=false adminSshKey="${RUNNER_SSH_PUB_KEY}"
+            --parameters deployAks=false adminSshKey="${RUNNER_SSH_PUB_KEY}" adminUsername="${VM_USER}"
 
       - name: Bootstrap Azure VMs and configure K3s workers
         if: github.event_name == 'workflow_dispatch' && inputs.operation == 'apply'
@@ -201,7 +190,6 @@ jobs:
           VM_CERT="$RUNNER_TEMP/azure-vm-cert.pub"
           KNOWN_HOSTS="$RUNNER_TEMP/azure-known-hosts"
           
-          # FIXED: Clean extraction using xargs to safely strip quotes/whitespace without breaking Bash
           VM_USER="$(awk -F': ' '/^ansible_user:/ {print $2}' ansible/inventories/production/group_vars/azure_agents.yml | tr -d '\r' | xargs)"
           
           if [[ -z "$VM_USER" ]]; then
@@ -282,8 +270,6 @@ jobs:
               fi
             done
 
-            # Wrap the bootstrap script with our variables
-            
             {
               echo '#!/bin/bash'
               echo 'export TAILSCALE_AUTH_KEY_B64="'"${TAILSCALE_AUTH_KEY_B64}"'"'
@@ -296,7 +282,6 @@ jobs:
 
             chmod +x "runner_${VM_NAME}.sh"
 
-            # Inject directly into the VM (Requires NO public IP!)
             az vm run-command invoke \
               --resource-group "$AZURE_RG_NAME" \
               --name "${VM_NAME}" \
@@ -326,7 +311,6 @@ jobs:
 
             INVENTORY="$RUNNER_TEMP/${VM_NAME}-inventory.yml"
           
-          # FIXED: EOF marker must be flush left to avoid Heredoc indentation errors
           cat > "$INVENTORY" <<INVENTORY_EOF
           all:
             children:
