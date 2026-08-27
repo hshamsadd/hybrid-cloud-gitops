@@ -11,7 +11,7 @@
     "ref": "refs/heads/main",
     "environment": "homelab-production",
     "runner_environment": "self-hosted",
-    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/libvirt-local.yml@refs/heads/main"
+    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/libvirt-prod-local-cleanup.yml@refs/heads/main"
   },
   "token_policies": [
     "github-libvirt-prod"

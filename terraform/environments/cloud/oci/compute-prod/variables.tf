@@ -130,7 +130,7 @@ variable "ssh_ca_public_key" {
 variable "vm_user" {
   type        = string
   description = "Linux user used for SSH and Ansible."
-  default     = "zshamsadd"
+  default     = "ubuntu"
 }
 
 # variable "k3s_node_name" {

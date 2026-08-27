@@ -7,7 +7,7 @@ variable "vm_name" {
 variable "vm_user" {
   type        = string
   description = "Linux user used for SSH and Ansible."
-  default     = "zshamsadd"
+  default     = "ubuntu"
 }
 
 variable "vpc_cidr" {

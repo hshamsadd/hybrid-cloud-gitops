@@ -211,6 +211,11 @@ jobs:
             sleep 10
           done
 
+          if [[ "$SSM_STATUS" != "Online" ]]; then
+            echo "ERROR: AWS SSM Agent never came online."
+            exit 1
+          fi
+
           TAILSCALE_AUTH_KEY_B64="$(printf '%s' "$TAILSCALE_AUTH_KEY" | base64 -w0)"
           SSH_CA_B64="$(base64 -w0 < "$SSH_CA_PUBLIC_KEY")"
 

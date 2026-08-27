@@ -238,6 +238,11 @@ jobs:
             sleep 10
           done
 
+          if ! "${VM_PUBLIC_SSH[@]}" true 2>/dev/null; then
+            echo "ERROR: OCI VM never accepted the SSH connection."
+            exit 1
+          fi
+
           TAILSCALE_AUTH_KEY="$(scripts/tailscale/create-node-auth-key.sh tag:k3s-worker)"
           echo "::add-mask::$TAILSCALE_AUTH_KEY"
           TAILSCALE_AUTH_KEY_B64="$(printf '%s' "$TAILSCALE_AUTH_KEY" | base64 -w0)"

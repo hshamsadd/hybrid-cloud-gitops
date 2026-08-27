@@ -10,11 +10,11 @@
     "repository": "hshamsadd/hybrid-cloud-gitops",
     "ref": "refs/heads/main",
     "environment": "homelab-production",
-    "runner_environment": "self-hosted",
-    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/libvirt-local.yml@refs/heads/main"
+    "runner_environment": "github-hosted",
+    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/aws-foundation-cleanup.yml@refs/heads/main"
   },
   "token_policies": [
-    "github-libvirt-prod"
+    "github-aws-foundation-prod"
   ],
   "token_ttl": "30m",
   "token_max_ttl": "45m"
