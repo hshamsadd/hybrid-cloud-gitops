@@ -185,7 +185,7 @@ resource "aws_instance" "web" {
       ssh_ca_public_key = trimspace(var.ssh_ca_public_key)
     }
   )
-  
+
   metadata_options {
     http_endpoint = "enabled"
     http_tokens   = "required"
