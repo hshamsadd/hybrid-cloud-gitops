@@ -108,10 +108,23 @@ resource "aws_security_group" "web_sg" {
 #   cidr_blocks       = ["0.0.0.0/0"]
 # }
 
-resource "aws_vpc_security_group_egress_rule" "all_ipv4" {
-  security_group_id = aws_security_group.web_sg.id
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "-1"
+resource "aws_security_group" "web_sg" {
+  name        = "${var.vm_name}-sg"
+  description = "AWS K3s worker managed through Tailscale"
+  vpc_id      = aws_vpc.main.id
+
+  # Add this inline egress block
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name      = "${var.vm_name}-sg"
+    ManagedBy = "Terraform"
+  }
 }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
