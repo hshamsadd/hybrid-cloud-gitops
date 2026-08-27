@@ -169,7 +169,7 @@ resource "aws_instance" "web" {
 
   tags = {
     Name        = var.vm_name
-    K3sNodeName = var.k3s_node_name
+    K3sNodeName = var.vm_name
     ManagedBy   = "Terraform"
   }
 

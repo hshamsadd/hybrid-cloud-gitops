@@ -133,8 +133,8 @@ variable "vm_user" {
   default     = "zshamsadd"
 }
 
-variable "k3s_node_name" {
-  type        = string
-  description = "Node name registered with K3s."
-  # default     = "worker-"
-}
+# variable "k3s_node_name" {
+#   type        = string
+#   description = "Node name registered with K3s."
+#   # default     = "worker-"
+# }
