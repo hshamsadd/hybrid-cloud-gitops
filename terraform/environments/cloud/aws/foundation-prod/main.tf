@@ -99,20 +99,20 @@ resource "aws_security_group" "web_sg" {
   }
 }
 
-resource "aws_security_group_rule" "allow_all_egress" {
-  type              = "egress"
-  security_group_id = aws_security_group.web_sg.id
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-# resource "aws_vpc_security_group_egress_rule" "all_ipv4" {
+# resource "aws_security_group_rule" "allow_all_egress" {
+#   type              = "egress"
 #   security_group_id = aws_security_group.web_sg.id
-#   cidr_ipv4         = "0.0.0.0/0"
-#   ip_protocol       = "-1"
+#   from_port         = 0
+#   to_port           = 0
+#   protocol          = "-1"
+#   cidr_blocks       = ["0.0.0.0/0"]
 # }
+
+resource "aws_vpc_security_group_egress_rule" "all_ipv4" {
+  security_group_id = aws_security_group.web_sg.id
+  cidr_ipv4         = "0.0.0.0/0"
+  ip_protocol       = "-1"
+}
 
 #################################
 # Systems Manager
@@ -171,6 +171,13 @@ resource "aws_instance" "web" {
 
   associate_public_ip_address = true
 
+  user_data = templatefile(
+    "${path.module}/cloud-init/cloud-init.yaml",
+    {
+      ssh_ca_public_key = trimspace(var.ssh_ca_public_key)
+    }
+  )
+  
   metadata_options {
     http_endpoint = "enabled"
     http_tokens   = "required"

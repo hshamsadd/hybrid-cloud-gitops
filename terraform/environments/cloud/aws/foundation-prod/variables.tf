@@ -10,6 +10,11 @@ variable "vm_user" {
   default     = "ubuntu"
 }
 
+variable "ssh_ca_public_key" {
+  type        = string
+  description = "Vault SSH user CA public key trusted by the VM."
+}
+
 variable "vpc_cidr" {
   type        = string
   description = "CIDR block for the VPC."
