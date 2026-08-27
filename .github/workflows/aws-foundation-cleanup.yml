@@ -72,6 +72,19 @@ jobs:
           aws-region: ${{ vars.AWS_REGION }}
           role-session-name: github-aws-foundation-cleanup-${{ github.run_id }}
 
+      - name: Export Vault SSH CA for Terraform
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -s "$GITHUB_WORKSPACE/vault/ssh/vault-ssh-user-ca.pub"
+
+          {
+            echo 'TF_VAR_ssh_ca_public_key<<VAULT_CA_EOF'
+            cat "$GITHUB_WORKSPACE/vault/ssh/vault-ssh-user-ca.pub"
+            echo 'VAULT_CA_EOF'
+          } >> "$GITHUB_ENV"    
+
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v4.0.0
         with:
