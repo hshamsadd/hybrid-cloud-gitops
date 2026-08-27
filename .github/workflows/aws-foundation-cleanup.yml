@@ -260,67 +260,112 @@ jobs:
           echo "Kubernetes node ${K3S_NODE_NAME} removed."
 
       - name: Remove AWS worker from Tailscale
-        if: ${{ steps.infrastructure.outputs.instance_id != '' }}
+        if: ${{ steps.infrastructure.outputs.vm_public_ip != '' }}
         shell: bash
         env:
-          INSTANCE_ID: ${{ steps.infrastructure.outputs.instance_id }}
+          VM_PUBLIC_IP: ${{ steps.infrastructure.outputs.vm_public_ip }}
         run: |
           set -Eeuo pipefail
 
+          SSH_KEY="$RUNNER_TEMP/aws-cleanup"
+          VM_CERT="$RUNNER_TEMP/aws-cleanup-vm-cert.pub"
+          KNOWN_HOSTS="$RUNNER_TEMP/aws-cleanup-known-hosts"
+
           echo "Removing AWS worker from the Tailscale mesh..."
-          echo "AWS instance: $INSTANCE_ID"
+          echo "AWS public IP: $VM_PUBLIC_IP"
 
-          COMMAND_ID="$(
-            aws ssm \
-              send-command \
-              --instance-ids "$INSTANCE_ID" \
-              --document-name "AWS-RunShellScript" \
-              --comment "Remove ephemeral K3s worker from Tailscale" \
-              --parameters 'commands=["tailscale logout"]' \
-              --query 'Command.CommandId' \
-              --output text \
-              2>/dev/null || true
-          )"
+          # Sign a temporary cert for the 'ubuntu' user on the VM
+          scripts/vault/sign-ci-ssh-key.sh \
+            "$SSH_KEY.pub" \
+            "ubuntu" \
+            "30m" \
+            "homelab-ci" \
+            > "$VM_CERT"
 
-          if [[ -z "$COMMAND_ID" || "$COMMAND_ID" == "None" ]]; then
-            echo "WARNING: Could not submit Tailscale logout through SSM."
-            echo "The AWS instance may already be offline or unavailable."
-            echo "Continuing with Terraform destruction."
-            exit 0
-          fi
+          chmod 0644 "$VM_CERT"
 
-          echo "SSM command submitted: $COMMAND_ID"
+          VM_SSH=(
+            ssh
+            -o IdentitiesOnly=yes
+            -o IdentityAgent=none
+            -o CertificateFile="$VM_CERT"
+            -o StrictHostKeyChecking=accept-new
+            -o UserKnownHostsFile="$KNOWN_HOSTS"
+            -o ConnectTimeout=10
+            -i "$SSH_KEY"
+            "ubuntu@${VM_PUBLIC_IP}"
+          )
 
-          if aws ssm \
-            wait \
-            command-executed \
-            --command-id "$COMMAND_ID" \
-            --instance-id "$INSTANCE_ID"
-          then
+          if "${VM_SSH[@]}" sudo -n tailscale logout; then
             echo "AWS worker logged out of Tailscale successfully."
           else
-            echo "WARNING: Tailscale logout did not complete successfully."
-
-            echo
-            echo "SSM command details:"
-
-            aws ssm \
-              get-command-invocation \
-              --command-id "$COMMAND_ID" \
-              --instance-id "$INSTANCE_ID" \
-              --query '{
-                Status:Status,
-                StatusDetails:StatusDetails,
-                ResponseCode:ResponseCode,
-                StandardOutput:StandardOutputContent,
-                StandardError:StandardErrorContent
-              }' \
-              --output json || true
-
-            echo
+            echo "WARNING: Could not connect via SSH to logout of Tailscale."
+            echo "The AWS instance may already be offline."
             echo "Continuing with Terraform destruction."
-            echo "The ephemeral Tailscale machine can be removed automatically after it goes offline."
           fi
+
+      # - name: Remove AWS worker from Tailscale
+      #   if: ${{ steps.infrastructure.outputs.instance_id != '' }}
+      #   shell: bash
+      #   env:
+      #     INSTANCE_ID: ${{ steps.infrastructure.outputs.instance_id }}
+      #   run: |
+      #     set -Eeuo pipefail
+
+      #     echo "Removing AWS worker from the Tailscale mesh..."
+      #     echo "AWS instance: $INSTANCE_ID"
+
+      #     COMMAND_ID="$(
+      #       aws ssm \
+      #         send-command \
+      #         --instance-ids "$INSTANCE_ID" \
+      #         --document-name "AWS-RunShellScript" \
+      #         --comment "Remove ephemeral K3s worker from Tailscale" \
+      #         --parameters 'commands=["tailscale logout"]' \
+      #         --query 'Command.CommandId' \
+      #         --output text \
+      #         2>/dev/null || true
+      #     )"
+
+      #     if [[ -z "$COMMAND_ID" || "$COMMAND_ID" == "None" ]]; then
+      #       echo "WARNING: Could not submit Tailscale logout through SSM."
+      #       echo "The AWS instance may already be offline or unavailable."
+      #       echo "Continuing with Terraform destruction."
+      #       exit 0
+      #     fi
+
+      #     echo "SSM command submitted: $COMMAND_ID"
+
+      #     if aws ssm \
+      #       wait \
+      #       command-executed \
+      #       --command-id "$COMMAND_ID" \
+      #       --instance-id "$INSTANCE_ID"
+      #     then
+      #       echo "AWS worker logged out of Tailscale successfully."
+      #     else
+      #       echo "WARNING: Tailscale logout did not complete successfully."
+
+      #       echo
+      #       echo "SSM command details:"
+
+      #       aws ssm \
+      #         get-command-invocation \
+      #         --command-id "$COMMAND_ID" \
+      #         --instance-id "$INSTANCE_ID" \
+      #         --query '{
+      #           Status:Status,
+      #           StatusDetails:StatusDetails,
+      #           ResponseCode:ResponseCode,
+      #           StandardOutput:StandardOutputContent,
+      #           StandardError:StandardErrorContent
+      #         }' \
+      #         --output json || true
+
+      #       echo
+      #       echo "Continuing with Terraform destruction."
+      #       echo "The ephemeral Tailscale machine can be removed automatically after it goes offline."
+      #     fi
 
       - name: Apply Terraform destroy plan
         shell: bash

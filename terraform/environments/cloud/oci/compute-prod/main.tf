@@ -17,8 +17,6 @@ resource "oci_core_subnet" "public_b" {
   cidr_block     = var.public_subnet_b_config.cidr_block
   display_name   = var.public_subnet_b_config.display_name
 
-  # FIX: Change 'route_table_id' to point directly to the VCN's default table ID attribute.
-  # This enforces the default lookup mapping safely.
   route_table_id = oci_core_vcn.main.default_route_table_id
 
   prohibit_public_ip_on_vnic = !var.public_subnet_b_config.is_public
