@@ -90,26 +90,6 @@ resource "aws_route_table_association" "public_assoc" {
 
 resource "aws_security_group" "web_sg" {
   name        = "${var.vm_name}-sg"
-  description = "AWS K3s worker managed through SSM and Tailscale"
-  vpc_id      = aws_vpc.main.id
-
-  tags = {
-    Name      = "${var.vm_name}-sg"
-    ManagedBy = "Terraform"
-  }
-}
-
-# resource "aws_security_group_rule" "allow_all_egress" {
-#   type              = "egress"
-#   security_group_id = aws_security_group.web_sg.id
-#   from_port         = 0
-#   to_port           = 0
-#   protocol          = "-1"
-#   cidr_blocks       = ["0.0.0.0/0"]
-# }
-
-resource "aws_security_group" "web_sg" {
-  name        = "${var.vm_name}-sg"
   description = "AWS K3s worker managed through Tailscale"
   vpc_id      = aws_vpc.main.id
 
@@ -126,6 +106,15 @@ resource "aws_security_group" "web_sg" {
     ManagedBy = "Terraform"
   }
 }
+
+# resource "aws_security_group_rule" "allow_all_egress" {
+#   type              = "egress"
+#   security_group_id = aws_security_group.web_sg.id
+#   from_port         = 0
+#   to_port           = 0
+#   protocol          = "-1"
+#   cidr_blocks       = ["0.0.0.0/0"]
+# }
 
 resource "aws_vpc_security_group_ingress_rule" "allow_ssh" {
   security_group_id = aws_security_group.web_sg.id
