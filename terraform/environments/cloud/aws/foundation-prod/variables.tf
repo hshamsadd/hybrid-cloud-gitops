@@ -1,13 +1,13 @@
 variable "vm_name" {
   type        = string
   description = "Name of the virtual machine."
-  default     = "ec2"
+  default     = "cloud-node-05"
 }
 
 variable "vm_user" {
   type        = string
   description = "Linux user used for SSH and Ansible."
-  default     = "ubuntu"
+  default     = "zshamsadd"
 }
 
 variable "vpc_cidr" {
@@ -37,5 +37,5 @@ variable "aws_region" {
 variable "k3s_node_name" {
   type        = string
   description = "Node name registered with K3s."
-  default     = "worker-node"
+  #default     = "worker-"
 }

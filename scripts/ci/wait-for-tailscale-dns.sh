@@ -27,5 +27,4 @@ fi
 
 tailscale ping --until-direct=false -c 3 "$TARGET_HOST" >&2
 
-# Return only the IP address to stdout so GitHub Actions can capture it
 printf "%s" "$VM_IP"

@@ -97,10 +97,10 @@ variable "internet_gateway_config" {
 ############################################
 # Compute Instance
 ############################################
-variable "cloud-node-02" {
+variable "cloud-node-06" {
   description = "The details of the compute instance"
   default = {
-    display_name : "cloud-node-02"
+    display_name : "cloud-node-06"
     assign_public_ip : true
     availability_domain : "JBGx:eu-amsterdam-1-AD-1"
     image_ocid : ""
@@ -130,11 +130,11 @@ variable "ssh_ca_public_key" {
 variable "vm_user" {
   type        = string
   description = "Linux user used for SSH and Ansible."
-  default     = "ubuntu"
+  default     = "zshamsadd"
 }
 
 variable "k3s_node_name" {
   type        = string
   description = "Node name registered with K3s."
-  default     = "worker-3"
+  # default     = "worker-"
 }

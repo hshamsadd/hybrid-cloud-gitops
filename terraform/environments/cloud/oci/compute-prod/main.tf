@@ -89,7 +89,7 @@ data "oci_core_images" "latest_ubuntu_arm" {
   compartment_id           = var.compartment_id
   operating_system         = "Canonical Ubuntu"
   operating_system_version = "22.04"
-  shape                    = var.cloud-node-02.shape.name
+  shape                    = var.cloud-node-06.shape.name
   sort_by                  = "TIMECREATED"
   sort_order               = "DESC"
 }
@@ -98,26 +98,26 @@ data "oci_core_images" "latest_ubuntu_arm" {
 # ############################################
 # # Compute Instance
 # ############################################
-resource "oci_core_instance" "cloud-node-02" {
+resource "oci_core_instance" "cloud-node-06" {
   compartment_id       = var.compartment_id
-  shape                = var.cloud-node-02.shape.name
-  availability_domain  = var.cloud-node-02.availability_domain
-  display_name         = var.cloud-node-02.display_name
+  shape                = var.cloud-node-06.shape.name
+  availability_domain  = var.cloud-node-06.availability_domain
+  display_name         = var.cloud-node-06.display_name
   preserve_boot_volume = false
   source_details {
     source_id               = data.oci_core_images.latest_ubuntu_arm.images[0].id
     source_type             = "image"
-    boot_volume_size_in_gbs = var.cloud-node-02.boot_volume_size_in_gbs
+    boot_volume_size_in_gbs = var.cloud-node-06.boot_volume_size_in_gbs
   }
 
   shape_config {
-    memory_in_gbs = var.cloud-node-02.shape.memory_in_gbs
-    ocpus         = var.cloud-node-02.shape.ocpus
+    memory_in_gbs = var.cloud-node-06.shape.memory_in_gbs
+    ocpus         = var.cloud-node-06.shape.ocpus
   }
 
   create_vnic_details {
     subnet_id        = oci_core_subnet.public_b.id
-    assign_public_ip = var.cloud-node-02.assign_public_ip
+    assign_public_ip = var.cloud-node-06.assign_public_ip
   }
 
   metadata = {
