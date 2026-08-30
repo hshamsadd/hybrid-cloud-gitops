@@ -42,7 +42,7 @@ variables:
         -d "subject_token=$TS_OIDC_TOKEN" | jq -r .access_token)
     - |
       RUNNER_TS_AUTH_KEY=$(curl -s -X POST "https://api.tailscale.com/api/v2/tailnet/-/keys" \
-        -H "Authorization: Bearer $TS_ACCESS_TOKEN" \
+        -u "$TS_ACCESS_TOKEN:" \
         -d '{"capabilities":{"devices":{"create":{"reusable":false,"ephemeral":true,"tags":["tag:ci"]}}}}' | jq -r .key)
 
     - tailscale up --authkey=$RUNNER_TS_AUTH_KEY --hostname=gitlab-runner-$CI_PIPELINE_ID --accept-routes --ssh
