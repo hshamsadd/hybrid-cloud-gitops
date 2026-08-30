@@ -1,10 +1,10 @@
-name: AWS - Cleanup Foundation Resources
+name: OCI - Cleanup Remote Compute Resources
 
 on:
   workflow_dispatch:
     inputs:
       confirm_destroy:
-        description: "Type DESTROY to permanently delete all Terraform-managed AWS resources"
+        description: "Type DESTROY to permanently delete all Terraform-managed OCI resources"
         required: true
         type: string
 
@@ -13,28 +13,26 @@ permissions:
   id-token: write
 
 concurrency:
-  group: aws-foundation-prod
+  group: oci-compute-prod
   cancel-in-progress: false
 
 jobs:
   terraform-destroy:
-    name: Destroy AWS Infrastructure
+    name: Destroy OCI Infrastructure
 
     if: ${{ inputs.confirm_destroy == 'DESTROY' }}
 
-    environment: homelab-production
+    environment: production
 
     runs-on: ubuntu-latest
 
     timeout-minutes: 60
 
     env:
-      TF_ROOT: terraform/environments/cloud/aws/foundation-prod
+      TF_ROOT: terraform/environments/cloud/oci/compute-prod
       TF_IN_AUTOMATION: "true"
 
       VAULT_ADDR: https://debian.tailfb03f6.ts.net:8200
-
-      AWS_REGION: ${{ vars.AWS_REGION }}
 
       K3S_CONTROL_HOST: ${{ vars.K3S_CONTROL_HOST }}
       K3S_CONTROL_USER: ${{ vars.K3S_CONTROL_USER }}
@@ -59,18 +57,12 @@ jobs:
           url: https://debian.tailfb03f6.ts.net:8200
           method: jwt
           path: github-actions
-          role: aws-foundation-prod-cleanup
-          jwtGithubAudience: vault://homelab
+          role: oci-foundation-prod-cleanup
+          jwtGithubAudience: vault:core-platform
           exportToken: true
           secrets: |
-            kv/data/platforms/hcp-terraform/ci token | TF_TOKEN_app_terraform_io
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6
-        with:
-          role-to-assume: ${{ vars.AWS_GITHUB_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION }}
-          role-session-name: github-aws-foundation-cleanup-${{ github.run_id }}
+            kv/data/platforms/hcp-terraform/ci token | TF_TOKEN_app_terraform_io ;
+            kv/data/infrastructure/production/oci private_key | TF_VAR_oci_private_key
 
       - name: Export Vault SSH CA for Terraform
         shell: bash
@@ -83,7 +75,7 @@ jobs:
             echo 'TF_VAR_ssh_ca_public_key<<VAULT_CA_EOF'
             cat "$GITHUB_WORKSPACE/vault/ssh/vault-ssh-user-ca.pub"
             echo 'VAULT_CA_EOF'
-          } >> "$GITHUB_ENV"    
+          } >> "$GITHUB_ENV"
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v4.0.0
@@ -97,7 +89,6 @@ jobs:
           set -euo pipefail
 
           command -v terraform
-          command -v aws
           command -v ssh
           command -v ssh-keygen
           command -v tailscale
@@ -153,6 +144,15 @@ jobs:
               2>/dev/null || true
           )"
 
+          VM_USER="$(
+            terraform \
+              -chdir="$TF_ROOT" \
+              output \
+              -raw \
+              vm_user \
+              2>/dev/null || true
+          )"
+
           INSTANCE_ID="$(
             terraform \
               -chdir="$TF_ROOT" \
@@ -180,18 +180,30 @@ jobs:
               2>/dev/null || true
           )"
 
+          BOOT_VOLUME_ID="$(
+            terraform \
+              -chdir="$TF_ROOT" \
+              output \
+              -raw \
+              boot_volume_id \
+              2>/dev/null || true
+          )"
+
           {
             echo "k3s_node_name=$K3S_NODE_NAME"
             echo "vm_name=$VM_NAME"
+            echo "vm_user=$VM_USER"
             echo "instance_id=$INSTANCE_ID"
             echo "vm_private_ip=$VM_PRIVATE_IP"
             echo "vm_public_ip=$VM_PUBLIC_IP"
+            echo "boot_volume_id=$BOOT_VOLUME_ID"
           } >> "$GITHUB_OUTPUT"
 
           echo "Infrastructure scheduled for cleanup:"
           echo
           echo "VM: ${VM_NAME:-unknown}"
-          echo "AWS instance: ${INSTANCE_ID:-unknown}"
+          echo "OCI instance: ${INSTANCE_ID:-unknown}"
+          echo "Boot volume: ${BOOT_VOLUME_ID:-unknown}"
           echo "Private IP: ${VM_PRIVATE_IP:-unknown}"
           echo "Public IP: ${VM_PUBLIC_IP:-unknown}"
           echo "K3s node: ${K3S_NODE_NAME:-unknown}"
@@ -206,7 +218,7 @@ jobs:
             plan \
             -destroy \
             -input=false \
-            -out="$RUNNER_TEMP/aws-destroy.tfplan"
+            -out="$RUNNER_TEMP/oci-destroy.tfplan"
 
       - name: Remove Kubernetes node
         if: ${{ steps.infrastructure.outputs.k3s_node_name != '' }}
@@ -216,11 +228,11 @@ jobs:
         run: |
           set -Eeuo pipefail
 
-          SSH_KEY="$RUNNER_TEMP/aws-cleanup"
+          SSH_KEY="$RUNNER_TEMP/oci-k3s-cleanup"
 
-          CONTROL_CERT="$RUNNER_TEMP/aws-cleanup-cert.pub"
+          CONTROL_CERT="$RUNNER_TEMP/oci-k3s-cleanup-cert.pub"
 
-          KNOWN_HOSTS="$RUNNER_TEMP/aws-cleanup-known-hosts"
+          KNOWN_HOSTS="$RUNNER_TEMP/oci-k3s-cleanup-known-hosts"
 
           echo "Removing Kubernetes node: $K3S_NODE_NAME"
 
@@ -233,14 +245,14 @@ jobs:
           ssh-keygen \
             -t ed25519 \
             -N "" \
-            -C "github-aws-cleanup-${GITHUB_RUN_ID}" \
+            -C "github-oci-k3s-cleanup-${GITHUB_RUN_ID}" \
             -f "$SSH_KEY"
 
           scripts/vault/sign-ci-ssh-key.sh \
             "$SSH_KEY.pub" \
             "$K3S_CONTROL_USER" \
             "30m" \
-            "homelab-ci" \
+            "platform-operator" \
             > "$CONTROL_CERT"
 
           chmod \
@@ -272,113 +284,82 @@ jobs:
 
           echo "Kubernetes node ${K3S_NODE_NAME} removed."
 
-      - name: Remove AWS worker from Tailscale
-        if: ${{ steps.infrastructure.outputs.vm_public_ip != '' }}
+      - name: Remove OCI worker from Tailscale
+        if: ${{ steps.infrastructure.outputs.vm_public_ip != '' && steps.infrastructure.outputs.vm_user != '' }}
         shell: bash
         env:
+          VM_NAME: ${{ steps.infrastructure.outputs.vm_name }}
+          VM_USER: ${{ steps.infrastructure.outputs.vm_user }}
           VM_PUBLIC_IP: ${{ steps.infrastructure.outputs.vm_public_ip }}
         run: |
           set -Eeuo pipefail
 
-          SSH_KEY="$RUNNER_TEMP/aws-cleanup"
-          VM_CERT="$RUNNER_TEMP/aws-cleanup-vm-cert.pub"
-          KNOWN_HOSTS="$RUNNER_TEMP/aws-cleanup-known-hosts"
+          SSH_KEY="$RUNNER_TEMP/oci-vm-cleanup"
 
-          echo "Removing AWS worker from the Tailscale mesh..."
-          echo "AWS public IP: $VM_PUBLIC_IP"
+          VM_CERT="$RUNNER_TEMP/oci-vm-cleanup-cert.pub"
 
-          # Sign a temporary cert for the 'ubuntu' user on the VM
-          scripts/vault/sign-ci-ssh-key.sh \
-            "$SSH_KEY.pub" \
-            "ubuntu" \
-            "30m" \
-            "homelab-ci" \
-            > "$VM_CERT"
+          KNOWN_HOSTS="$RUNNER_TEMP/oci-vm-cleanup-known-hosts"
 
-          chmod 0644 "$VM_CERT"
+          echo "Removing OCI worker from the Tailscale mesh..."
+          echo "VM: ${VM_NAME:-unknown}"
+          echo "Public IP: $VM_PUBLIC_IP"
 
-          VM_SSH=(
-            ssh
-            -o IdentitiesOnly=yes
-            -o IdentityAgent=none
-            -o CertificateFile="$VM_CERT"
-            -o StrictHostKeyChecking=accept-new
-            -o UserKnownHostsFile="$KNOWN_HOSTS"
-            -o ConnectTimeout=10
-            -i "$SSH_KEY"
-            "ubuntu@${VM_PUBLIC_IP}"
-          )
+          touch "$KNOWN_HOSTS"
 
-          if "${VM_SSH[@]}" sudo -n tailscale logout; then
-            echo "AWS worker logged out of Tailscale successfully."
-          else
-            echo "WARNING: Could not connect via SSH to logout of Tailscale."
-            echo "The AWS instance may already be offline."
+          chmod \
+            0600 \
+            "$KNOWN_HOSTS"
+
+          if ! ssh-keygen \
+            -t ed25519 \
+            -N "" \
+            -C "github-oci-vm-cleanup-${GITHUB_RUN_ID}" \
+            -f "$SSH_KEY"
+          then
+            echo "WARNING: Could not generate temporary SSH key."
             echo "Continuing with Terraform destruction."
+            exit 0
           fi
 
-      # - name: Remove AWS worker from Tailscale
-      #   if: ${{ steps.infrastructure.outputs.instance_id != '' }}
-      #   shell: bash
-      #   env:
-      #     INSTANCE_ID: ${{ steps.infrastructure.outputs.instance_id }}
-      #   run: |
-      #     set -Eeuo pipefail
+          if ! scripts/vault/sign-ci-ssh-key.sh \
+            "$SSH_KEY.pub" \
+            "$VM_USER" \
+            "30m" \
+            "platform-operator" \
+            > "$VM_CERT"
+          then
+            echo "WARNING: Could not obtain Vault-signed SSH certificate."
+            echo "Continuing with Terraform destruction."
+            exit 0
+          fi
 
-      #     echo "Removing AWS worker from the Tailscale mesh..."
-      #     echo "AWS instance: $INSTANCE_ID"
+          chmod \
+            0600 \
+            "$SSH_KEY"
 
-      #     COMMAND_ID="$(
-      #       aws ssm \
-      #         send-command \
-      #         --instance-ids "$INSTANCE_ID" \
-      #         --document-name "AWS-RunShellScript" \
-      #         --comment "Remove ephemeral K3s worker from Tailscale" \
-      #         --parameters 'commands=["tailscale logout"]' \
-      #         --query 'Command.CommandId' \
-      #         --output text \
-      #         2>/dev/null || true
-      #     )"
+          chmod \
+            0644 \
+            "$SSH_KEY.pub" \
+            "$VM_CERT"
 
-      #     if [[ -z "$COMMAND_ID" || "$COMMAND_ID" == "None" ]]; then
-      #       echo "WARNING: Could not submit Tailscale logout through SSM."
-      #       echo "The AWS instance may already be offline or unavailable."
-      #       echo "Continuing with Terraform destruction."
-      #       exit 0
-      #     fi
-
-      #     echo "SSM command submitted: $COMMAND_ID"
-
-      #     if aws ssm \
-      #       wait \
-      #       command-executed \
-      #       --command-id "$COMMAND_ID" \
-      #       --instance-id "$INSTANCE_ID"
-      #     then
-      #       echo "AWS worker logged out of Tailscale successfully."
-      #     else
-      #       echo "WARNING: Tailscale logout did not complete successfully."
-
-      #       echo
-      #       echo "SSM command details:"
-
-      #       aws ssm \
-      #         get-command-invocation \
-      #         --command-id "$COMMAND_ID" \
-      #         --instance-id "$INSTANCE_ID" \
-      #         --query '{
-      #           Status:Status,
-      #           StatusDetails:StatusDetails,
-      #           ResponseCode:ResponseCode,
-      #           StandardOutput:StandardOutputContent,
-      #           StandardError:StandardErrorContent
-      #         }' \
-      #         --output json || true
-
-      #       echo
-      #       echo "Continuing with Terraform destruction."
-      #       echo "The ephemeral Tailscale machine can be removed automatically after it goes offline."
-      #     fi
+          if ssh \
+            -o IdentitiesOnly=yes \
+            -o IdentityAgent=none \
+            -o CertificateFile="$VM_CERT" \
+            -o StrictHostKeyChecking=accept-new \
+            -o UserKnownHostsFile="$KNOWN_HOSTS" \
+            -o ConnectTimeout=15 \
+            -i "$SSH_KEY" \
+            "${VM_USER}@${VM_PUBLIC_IP}" \
+            sudo -n \
+            tailscale logout
+          then
+            echo "OCI worker logged out of Tailscale successfully."
+          else
+            echo "WARNING: Could not log the OCI worker out of Tailscale."
+            echo "The OCI instance may already be unavailable or unreachable."
+            echo "Continuing with Terraform destruction."
+          fi
 
       - name: Apply Terraform destroy plan
         shell: bash
@@ -389,7 +370,7 @@ jobs:
             -chdir="$TF_ROOT" \
             apply \
             -input=false \
-            "$RUNNER_TEMP/aws-destroy.tfplan"
+            "$RUNNER_TEMP/oci-destroy.tfplan"
 
       - name: Verify Terraform state is empty
         shell: bash
@@ -418,16 +399,18 @@ jobs:
         env:
           VM_NAME: ${{ steps.infrastructure.outputs.vm_name }}
           INSTANCE_ID: ${{ steps.infrastructure.outputs.instance_id }}
+          BOOT_VOLUME_ID: ${{ steps.infrastructure.outputs.boot_volume_id }}
           VM_PRIVATE_IP: ${{ steps.infrastructure.outputs.vm_private_ip }}
           VM_PUBLIC_IP: ${{ steps.infrastructure.outputs.vm_public_ip }}
           K3S_NODE_NAME: ${{ steps.infrastructure.outputs.k3s_node_name }}
         run: |
-          echo "AWS cleanup completed successfully."
+          echo "OCI cleanup completed successfully."
           echo
-          echo "Destroyed Terraform-managed AWS infrastructure."
+          echo "Destroyed Terraform-managed OCI infrastructure."
           echo
           echo "VM: ${VM_NAME:-unknown}"
-          echo "AWS instance: ${INSTANCE_ID:-unknown}"
+          echo "OCI instance: ${INSTANCE_ID:-unknown}"
+          echo "Boot volume configured for deletion: ${BOOT_VOLUME_ID:-unknown}"
           echo "Private IP: ${VM_PRIVATE_IP:-unknown}"
           echo "Public IP: ${VM_PUBLIC_IP:-unknown}"
           echo "Removed Kubernetes node: ${K3S_NODE_NAME:-unknown}"
@@ -435,16 +418,20 @@ jobs:
           echo "The Terraform workspace is ready for a fresh deployment."
           echo
           echo "You can now run:"
-          echo "1. AWS Foundation -> plan"
-          echo "2. AWS Foundation -> apply"
+          echo "1. OCI Remote Compute -> plan"
+          echo "2. OCI Remote Compute -> apply"
 
       - name: Remove temporary files
         if: always()
         shell: bash
         run: |
           rm -f \
-            "$RUNNER_TEMP/aws-destroy.tfplan" \
-            "$RUNNER_TEMP/aws-cleanup" \
-            "$RUNNER_TEMP/aws-cleanup.pub" \
-            "$RUNNER_TEMP/aws-cleanup-cert.pub" \
-            "$RUNNER_TEMP/aws-cleanup-known-hosts"
+            "$RUNNER_TEMP/oci-destroy.tfplan" \
+            "$RUNNER_TEMP/oci-k3s-cleanup" \
+            "$RUNNER_TEMP/oci-k3s-cleanup.pub" \
+            "$RUNNER_TEMP/oci-k3s-cleanup-cert.pub" \
+            "$RUNNER_TEMP/oci-k3s-cleanup-known-hosts" \
+            "$RUNNER_TEMP/oci-vm-cleanup" \
+            "$RUNNER_TEMP/oci-vm-cleanup.pub" \
+            "$RUNNER_TEMP/oci-vm-cleanup-cert.pub" \
+            "$RUNNER_TEMP/oci-vm-cleanup-known-hosts"

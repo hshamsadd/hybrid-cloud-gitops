@@ -1,0 +1,21 @@
+{
+  "role_type": "jwt",
+  "user_claim": "user_login",
+  "bound_audiences": [
+    "vault:core-platform"
+  ],
+  "bound_subject": "project_path:hshamsadd-cloud-labs/platform-engineering/hybrid-cloud-gitops:ref_type:branch:ref:main:environment:production",
+  "bound_claims_type": "string",
+  "bound_claims": {
+    "project_path": "hshamsadd-cloud-labs/platform-engineering/hybrid-cloud-gitops",
+    "project_id": "85890197",
+    "ref": "main",
+    "ref_type": "branch",
+    "environment": "production"
+  },
+  "token_policies": [
+    "pipeline-aws-foundation-prod"
+  ],
+  "token_ttl": "30m",
+  "token_max_ttl": "45m"
+}

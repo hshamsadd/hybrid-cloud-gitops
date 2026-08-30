@@ -24,7 +24,7 @@ jobs:
   terraform-ansible:
     name: OCI Terraform and Ansible
 
-    environment: homelab-production
+    environment: production
 
     runs-on: ubuntu-latest
 
@@ -62,8 +62,8 @@ jobs:
           url: https://debian.tailfb03f6.ts.net:8200
           method: jwt
           path: github-actions
-          role: oci-compute-prod-remote
-          jwtGithubAudience: vault://homelab
+          role: oci-foundation-prod
+          jwtGithubAudience: vault:core-platform
           exportToken: true
           secrets: |
             kv/data/platforms/hcp-terraform/ci token | TF_TOKEN_app_terraform_io ;
@@ -187,8 +187,8 @@ jobs:
           chmod 0600 "$KNOWN_HOSTS"
 
           ssh-keygen -t ed25519 -N "" -C "github-oci-${GITHUB_RUN_ID}" -f "$SSH_KEY"
-          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$K3S_CONTROL_USER" "30m" "homelab-ci" > "$CONTROL_CERT"
-          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$VM_USER" "30m" "homelab-ci" > "$VM_CERT"
+          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$K3S_CONTROL_USER" "30m" "platform-operator" > "$CONTROL_CERT"
+          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$VM_USER" "30m" "platform-operator" > "$VM_CERT"
 
           chmod 0600 "$SSH_KEY"
           chmod 0644 "$SSH_KEY.pub" "$CONTROL_CERT" "$VM_CERT"

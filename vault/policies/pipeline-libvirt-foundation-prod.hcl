@@ -6,6 +6,6 @@ path "kv/data/platforms/tailscale/provisioner" {
   capabilities = ["read"]
 }
 
-path "ssh-client-signer/sign/homelab-ci" {
-  capabilities = ["update"]
+path "ssh-client-signer/sign/github-libvirt" {
+  capabilities = ["update"]  
 }

@@ -2,19 +2,19 @@
   "role_type": "jwt",
   "user_claim": "actor",
   "bound_audiences": [
-    "vault://homelab"
+    "vault:core-platform"
   ],
-  "bound_subject": "repo:hshamsadd@209839117/hybrid-cloud-gitops@1291238687:environment:homelab-production",
+  "bound_subject": "repo:hshamsadd@209839117/hybrid-cloud-gitops@1291238687:environment:production",
   "bound_claims_type": "string",
   "bound_claims": {
     "repository": "hshamsadd/hybrid-cloud-gitops",
     "ref": "refs/heads/main",
-    "environment": "homelab-production",
+    "environment": "production",
     "runner_environment": "github-hosted",
-    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/aws-foundation.yml@refs/heads/main"
+    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/aws-infra-foundation-cleanup.yml@refs/heads/main"
   },
   "token_policies": [
-    "github-aws-foundation-prod"
+    "pipeline-aws-foundation-prod"
   ],
   "token_ttl": "30m",
   "token_max_ttl": "45m"

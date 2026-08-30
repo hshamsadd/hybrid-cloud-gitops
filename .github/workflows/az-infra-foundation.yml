@@ -23,7 +23,7 @@ concurrency:
 jobs:
   bicep-ansible:
     name: Azure Bicep and Ansible
-    environment: homelab-production
+    environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 60
 
@@ -56,8 +56,8 @@ jobs:
           url: https://debian.tailfb03f6.ts.net:8200
           method: jwt
           path: github-actions
-          role: azure-foundation-prod-remote
-          jwtGithubAudience: vault://homelab
+          role: azure-foundation-prod
+          jwtGithubAudience: vault:core-platform
           exportToken: true
           secrets: |
             kv/data/platforms/tailscale/provisioner oauth_client_id | TS_API_CLIENT_ID ;
@@ -178,8 +178,8 @@ jobs:
           touch "$KNOWN_HOSTS"
           chmod 0600 "$KNOWN_HOSTS" "$SSH_KEY"
 
-          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$K3S_CONTROL_USER" "30m" "homelab-ci" > "$CONTROL_CERT"
-          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$VM_USER" "30m" "homelab-ci" > "$VM_CERT"
+          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$K3S_CONTROL_USER" "30m" "platform-operator" > "$CONTROL_CERT"
+          scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$VM_USER" "30m" "platform-operator" > "$VM_CERT"
 
           chmod 0644 "$SSH_KEY.pub" "$CONTROL_CERT" "$VM_CERT"
           ssh-keygen -Lf "$CONTROL_CERT" >/dev/null
