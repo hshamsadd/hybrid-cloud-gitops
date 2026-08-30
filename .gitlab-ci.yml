@@ -20,9 +20,18 @@ variables:
     - export DEBIAN_FRONTEND=noninteractive
     - export TZ=Europe/Amsterdam
     - apt-get update -yqq && apt-get install -yqq curl jq unzip openssh-client ansible awscli software-properties-common python3-pip
-    - curl -fsSL https://releases.hashicorp.com/terraform/1.15.8/terraform_1.15.8_linux_amd64.zip -o terraform.zip && unzip terraform.zip && mv terraform /usr/local/bin/
-    - curl -fsSL https://releases.hashicorp.com/vault/1.15.4/vault_1.15.4_linux_amd64.zip -o vault.zip && unzip vault.zip && mv vault /usr/local/bin/
+
+    # 1. Dynamically detect processor architecture (fixes the 'No such file' error)
+    - ARCH=$(uname -m | sed -e 's/x86_64/amd64/' -e 's/aarch64/arm64/')
+    - curl -fsSL "https://releases.hashicorp.com/terraform/1.15.8/terraform_1.15.8_linux_${ARCH}.zip" -o terraform.zip && unzip terraform.zip && mv terraform /usr/local/bin/
+    - curl -fsSL "https://releases.hashicorp.com/vault/1.15.4/vault_1.15.4_linux_${ARCH}.zip" -o vault.zip && unzip vault.zip && mv vault /usr/local/bin/
     - curl -fsSL https://tailscale.com/install.sh | sh
+
+    # 2. Debugging AWS: Print the OIDC token claims so we can fix the AWS IAM Trust Policy
+    - echo "=== DECODED AWS OIDC TOKEN ==="
+    - echo "$AWS_OIDC_TOKEN" | awk -F. '{print $2}' | python3 -c "import sys, base64; print(base64.urlsafe_b64decode(sys.stdin.read() + '===').decode('utf-8'))" | jq .
+    - echo "=============================="
+
     - export VAULT_TOKEN=$(/usr/local/bin/vault write -field=token auth/gitlab-pipeline/login role=aws-foundation-prod jwt=$VAULT_OIDC_TOKEN)
     - export TF_TOKEN_app_terraform_io=$(/usr/local/bin/vault kv get -field=token platforms/hcp-terraform/ci)
     - export TS_API_CLIENT_ID=$(/usr/local/bin/vault kv get -field=oauth_client_id platforms/tailscale/provisioner)
