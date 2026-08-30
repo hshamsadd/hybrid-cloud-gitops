@@ -20,6 +20,8 @@ variables:
     AWS_OIDC_TOKEN:
       aud: "sts.amazonaws.com"
   before_script:
+    - export DEBIAN_FRONTEND=noninteractive
+    - export TZ=Europe/Amsterdam
     - apt-get update -yqq && apt-get install -yqq curl jq unzip openssh-client ansible awscli software-properties-common python3-pip
     - curl -fsSL https://releases.hashicorp.com/terraform/1.15.8/terraform_1.15.8_linux_amd64.zip -o terraform.zip && unzip terraform.zip && mv terraform /usr/local/bin/
     - curl -fsSL https://releases.hashicorp.com/vault/1.15.4/vault_1.15.4_linux_amd64.zip -o vault.zip && unzip vault.zip && mv vault /usr/local/bin/
@@ -148,5 +150,3 @@ terraform_apply:
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
       when: manual
-
-#
