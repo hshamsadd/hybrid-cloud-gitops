@@ -26,6 +26,14 @@ variables:
     - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com jammy main" | tee /etc/apt/sources.list.d/hashicorp.list
     - apt-get update -yqq && apt-get install -yqq terraform=1.15.8-* vault
     - curl -fsSL https://tailscale.com/install.sh | sh
+
+    # -------------------------------------------------------------------------
+    # NEW: Start Tailscale Daemon in Userspace Mode (Because Docker lacks systemd)
+    # -------------------------------------------------------------------------
+    - tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --outbound-http-proxy-listen=localhost:1055 &
+    - sleep 3
+    # -------------------------------------------------------------------------
+
     - |
       TS_ACCESS_TOKEN=$(curl -s -X POST "https://api.tailscale.com/api/v2/oauth/token" \
         -d "client_id=$TS_WIF_CLIENT_ID" \
@@ -36,7 +44,19 @@ variables:
       RUNNER_TS_AUTH_KEY=$(curl -s -X POST "https://api.tailscale.com/api/v2/tailnet/-/keys" \
         -H "Authorization: Bearer $TS_ACCESS_TOKEN" \
         -d '{"capabilities":{"devices":{"create":{"reusable":false,"ephemeral":true,"tags":["tag:ci"]}}}}' | jq -r .key)
+
     - tailscale up --authkey=$RUNNER_TS_AUTH_KEY --hostname=gitlab-runner-$CI_PIPELINE_ID --accept-routes --ssh
+
+    # -------------------------------------------------------------------------
+    # NEW: Tell Terraform and Vault to use the Tailscale network proxy
+    # -------------------------------------------------------------------------
+    - export ALL_PROXY=socks5h://localhost:1055/
+    - export HTTP_PROXY=http://localhost:1055/
+    - export http_proxy=http://localhost:1055/
+    - export HTTPS_PROXY=http://localhost:1055/
+    - export https_proxy=http://localhost:1055/
+    # -------------------------------------------------------------------------
+
     - export VAULT_TOKEN=$(vault write -field=token auth/gitlab-pipeline/login role=aws-foundation-prod jwt=$VAULT_OIDC_TOKEN)
     - export TF_TOKEN_app_terraform_io=$(vault kv get -field=token platforms/hcp-terraform/ci)
     - export TS_API_CLIENT_ID=$(vault kv get -field=oauth_client_id platforms/tailscale/provisioner)
