@@ -9,62 +9,77 @@ variables:
   ANSIBLE_CONFIG: "${CI_PROJECT_DIR}/ansible/ansible.cfg"
   ANSIBLE_ROLES_PATH: "${CI_PROJECT_DIR}/ansible/roles"
 
-.pipeline_automation_base:
+# =====================================================================
+# THE SETUP & AUTHENTICATION BLOCK (Mirrors GitHub Steps 1-5)
+# =====================================================================
+.setup_and_auth:
   image: ubuntu:22.04
   id_tokens:
     VAULT_OIDC_TOKEN:
       aud: "vault:core-platform"
     AWS_OIDC_TOKEN:
       aud: "sts.amazonaws.com"
+    TS_OIDC_TOKEN:
+      aud: "$TS_WIF_AUDIENCE"
   before_script:
     - export DEBIAN_FRONTEND=noninteractive
     - export TZ=Europe/Amsterdam
 
-    # 1. Add HashiCorp APT Repository and install Vault/Terraform natively
+    # Install dependencies
     - apt-get update -yqq && apt-get install -yqq curl jq unzip openssh-client ansible awscli software-properties-common python3-pip gnupg
     - curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
     - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com jammy main" | tee /etc/apt/sources.list.d/hashicorp.list
     - apt-get update -yqq && apt-get install -yqq terraform=1.15.8-* vault
     - curl -fsSL https://tailscale.com/install.sh | sh
 
-    # 2. Authenticate
+    # Step 1: Connect Tailscale
+    - TS_ACCESS_TOKEN=$(curl -s -X POST "https://api.tailscale.com/api/v2/oauth/token" -d "client_id=$TS_WIF_CLIENT_ID" -d "grant_type=urn:ietf:params:oauth:grant-type:token-exchange" -d "subject_token_type=urn:ietf:params:oauth:token-type:jwt" -d "subject_token=$TS_OIDC_TOKEN" | jq -r .access_token)
+    - RUNNER_TS_AUTH_KEY=$(curl -s -X POST "https://api.tailscale.com/api/v2/tailnet/-/keys" -H "Authorization: Bearer $TS_ACCESS_TOKEN" -d '{"capabilities":{"devices":{"create":{"reusable":false,"ephemeral":true,"tags":["tag:ci"]}}}}' | jq -r .key)
+    - tailscale up --authkey=$RUNNER_TS_AUTH_KEY --hostname=gitlab-runner-$CI_PIPELINE_ID --accept-routes --ssh
+
+    # Step 2: Authenticate Vault
     - export VAULT_TOKEN=$(vault write -field=token auth/gitlab-pipeline/login role=aws-foundation-prod jwt=$VAULT_OIDC_TOKEN)
     - export TF_TOKEN_app_terraform_io=$(vault kv get -field=token platforms/hcp-terraform/ci)
     - export TS_API_CLIENT_ID=$(vault kv get -field=oauth_client_id platforms/tailscale/provisioner)
     - export TS_API_CLIENT_SECRET=$(vault kv get -field=oauth_client_secret platforms/tailscale/provisioner)
+
+    # Step 3: Authenticate AWS
     - STS_CREDS=$(aws sts assume-role-with-web-identity --role-arn $AWS_GITLAB_ROLE_ARN --role-session-name gitlab-aws-$CI_PIPELINE_ID --web-identity-token $AWS_OIDC_TOKEN --duration-seconds 3600)
     - export AWS_ACCESS_KEY_ID=$(echo $STS_CREDS | jq -r '.Credentials.AccessKeyId')
     - export AWS_SECRET_ACCESS_KEY=$(echo $STS_CREDS | jq -r '.Credentials.SecretAccessKey')
     - export AWS_SESSION_TOKEN=$(echo $STS_CREDS | jq -r '.Credentials.SessionToken')
     - export AWS_DEFAULT_REGION=$AWS_REGION
-    - RUNNER_TS_AUTH_KEY=$(bash scripts/tailscale/create-node-auth-key.sh tag:ci)
-    - tailscale up --authkey=$RUNNER_TS_AUTH_KEY --hostname=gitlab-runner-$CI_PIPELINE_ID --accept-routes --ssh
+
+    # Step 4: Export Vault SSH CA
     - export TF_VAR_ssh_ca_public_key=$(cat ${CI_PROJECT_DIR}/vault/ssh/vault-ssh-user-ca.pub)
 
+# =====================================================================
+# TERRAFORM PLAN (Runs automatically)
+# =====================================================================
 terraform_plan:
-  extends: .pipeline_automation_base
+  extends: .setup_and_auth
   stage: plan
   environment:
     name: production
-    deployment_tier: production
   script:
-    - /usr/local/bin/terraform -chdir="$TF_ROOT" fmt -check -recursive
-    - /usr/local/bin/terraform -chdir="$TF_ROOT" init -input=false
-    - /usr/local/bin/terraform -chdir="$TF_ROOT" validate
-    - /usr/local/bin/terraform -chdir="$TF_ROOT" plan -input=false
+    - terraform -chdir="$TF_ROOT" fmt -check -recursive
+    - terraform -chdir="$TF_ROOT" init -input=false
+    - terraform -chdir="$TF_ROOT" validate
+    - terraform -chdir="$TF_ROOT" plan -input=false
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
 
+# =====================================================================
+# TERRAFORM APPLY & ANSIBLE BOOTSTRAP (Manual Trigger)
+# =====================================================================
 terraform_apply:
-  extends: .pipeline_automation_base
+  extends: .setup_and_auth
   stage: apply
   environment:
     name: production
-    deployment_tier: production
-    url: "$DYNAMIC_ENVIRONMENT_URL"
   script:
-    - /usr/local/bin/terraform -chdir="$TF_ROOT" init -input=false
-    - /usr/local/bin/terraform -chdir="$TF_ROOT" apply -input=false -auto-approve
+    - terraform -chdir="$TF_ROOT" init -input=false
+    - terraform -chdir="$TF_ROOT" apply -input=false -auto-approve
 
     - SSH_KEY="/tmp/aws-vm"
     - CONTROL_CERT="/tmp/aws-control-cert.pub"
@@ -73,17 +88,15 @@ terraform_apply:
     - KNOWN_HOSTS="/tmp/aws-known-hosts"
     - SSH_CA_PUBLIC_KEY="${CI_PROJECT_DIR}/vault/ssh/vault-ssh-user-ca.pub"
 
-    - VM_NAME="$(/usr/local/bin/terraform -chdir="$TF_ROOT" output -raw vm_name)"
-    - VM_USER="$(/usr/local/bin/terraform -chdir="$TF_ROOT" output -raw vm_user)"
-    - K3S_NODE_NAME="$(/usr/local/bin/terraform -chdir="$TF_ROOT" output -raw k3s_node_name)"
-    - VM_PUBLIC_IP="$(/usr/local/bin/terraform -chdir="$TF_ROOT" output -raw vm_public_ip)"
-
-    - echo "DYNAMIC_ENVIRONMENT_URL=http://${VM_PUBLIC_IP}" >> deploy.env
+    - VM_NAME="$(terraform -chdir="$TF_ROOT" output -raw vm_name)"
+    - VM_USER="$(terraform -chdir="$TF_ROOT" output -raw vm_user)"
+    - K3S_NODE_NAME="$(terraform -chdir="$TF_ROOT" output -raw k3s_node_name)"
+    - VM_PUBLIC_IP="$(terraform -chdir="$TF_ROOT" output -raw vm_public_ip)"
 
     - touch "$KNOWN_HOSTS" && chmod 0600 "$KNOWN_HOSTS"
     - ssh-keygen -t ed25519 -N "" -C "gitlab-aws-${CI_PIPELINE_ID}" -f "$SSH_KEY"
-    - scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$K3S_CONTROL_USER" "30m" "platform-operator" > "$CONTROL_CERT"
-    - scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$VM_USER" "30m" "platform-operator" > "$VM_CERT"
+    - bash scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$K3S_CONTROL_USER" "30m" "platform-operator" > "$CONTROL_CERT"
+    - bash scripts/vault/sign-ci-ssh-key.sh "$SSH_KEY.pub" "$VM_USER" "30m" "platform-operator" > "$VM_CERT"
     - chmod 0600 "$SSH_KEY" && chmod 0644 "$SSH_KEY.pub" "$CONTROL_CERT" "$VM_CERT"
 
     - VM_PUBLIC_SSH="ssh -o IdentitiesOnly=yes -o IdentityAgent=none -o CertificateFile=$VM_CERT -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$KNOWN_HOSTS -o ConnectTimeout=10 -i $SSH_KEY $VM_USER@$VM_PUBLIC_IP"
@@ -94,28 +107,20 @@ terraform_apply:
         if $VM_PUBLIC_SSH true 2>/dev/null; then break; fi
         sleep 10
       done
-
-    - |
       if ! $VM_PUBLIC_SSH true 2>/dev/null; then
         echo "ERROR: AWS VM never accepted the SSH connection."
         exit 1
       fi
 
-    - TAILSCALE_AUTH_KEY="$(scripts/tailscale/create-node-auth-key.sh tag:k3s-worker)"
+    - TAILSCALE_AUTH_KEY="$(bash scripts/tailscale/create-node-auth-key.sh tag:k3s-worker)"
     - TAILSCALE_AUTH_KEY_B64="$(printf '%s' "$TAILSCALE_AUTH_KEY" | base64 -w0)"
     - SSH_CA_B64="$(base64 -w0 < "$SSH_CA_PUBLIC_KEY")"
 
     - echo "Bootstrapping AWS VM..."
     - |
-      $VM_PUBLIC_SSH sudo -n \
-        env TAILSCALE_AUTH_KEY_B64="${TAILSCALE_AUTH_KEY_B64}" \
-        TAILSCALE_HOSTNAME="${VM_NAME}" \
-        K3S_NODE_NAME="${K3S_NODE_NAME}" \
-        SSH_CA_B64="${SSH_CA_B64}" \
-        bash -s < scripts/ci/bootstrap-node.sh
+      $VM_PUBLIC_SSH sudo -n env TAILSCALE_AUTH_KEY_B64="${TAILSCALE_AUTH_KEY_B64}" TAILSCALE_HOSTNAME="${VM_NAME}" K3S_NODE_NAME="${K3S_NODE_NAME}" SSH_CA_B64="${SSH_CA_B64}" bash -s < scripts/ci/bootstrap-node.sh
 
-    - VM_TS_IP="$(scripts/ci/wait-for-tailscale-dns.sh "$VM_NAME")"
-
+    - VM_TS_IP="$(bash scripts/ci/wait-for-tailscale-dns.sh "$VM_NAME")"
     - CONTROL_SSH="ssh -o IdentitiesOnly=yes -o IdentityAgent=none -o CertificateFile=$CONTROL_CERT -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=$KNOWN_HOSTS -i $SSH_KEY $K3S_CONTROL_USER@$K3S_CONTROL_HOST"
 
     - $CONTROL_SSH sudo -n /usr/local/sbin/homelab-k3s-ci delete "$K3S_NODE_NAME" || true
@@ -139,9 +144,8 @@ terraform_apply:
     - ansible-playbook -i "$INVENTORY" ansible/playbooks/configure-k3s-worker.yml
     - $CONTROL_SSH sudo -n /usr/local/sbin/homelab-k3s-ci finalize "$K3S_NODE_NAME"
 
-  artifacts:
-    reports:
-      dotenv: deploy.env
+  after_script:
+    - rm -f /tmp/aws-vm /tmp/aws-vm.pub /tmp/aws-control-cert.pub /tmp/aws-vm-cert.pub /tmp/aws-inventory.yml /tmp/aws-known-hosts
 
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
