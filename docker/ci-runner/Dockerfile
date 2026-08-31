@@ -28,19 +28,25 @@ RUN mkdir -p --mode=0755 /usr/share/keyrings \
 
 # 3. Install Cloud CLIs, Vault, Terraform, and Tailscale via APT
 RUN apt-get update -yqq && apt-get install -yqq --no-install-recommends \
-    terraform vault tailscale azure-cli awscli \
+    terraform vault tailscale azure-cli \
     && rm -rf /var/lib/apt/lists/*
 
-# 4. Install Ansible and OCI CLI via Python PIP (Cleanest method for OCI)
+# 4. Install AWS CLI v2 (Standalone binary to prevent Python conflicts)
+RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" \
+    && unzip -q awscliv2.zip \
+    && ./aws/install \
+    && rm -rf awscliv2.zip ./aws    
+
+# 5. Install Ansible and OCI CLI via Python PIP (Cleanest method for OCI)
 RUN pip3 install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir ansible oci-cli
 
-# 5. Install Go (Golang) for health-ingester compilation
+# 6. Install Go (Golang) for health-ingester compilation
 RUN curl -fsSL https://go.dev/dl/go1.22.1.linux-amd64.tar.gz -o go.tar.gz \
     && tar -C /usr/local -xzf go.tar.gz \
     && rm go.tar.gz
 
-# 6. Set working directory
+# 7. Set working directory
 WORKDIR /workspace
 
 # Default command keeps the container alive if run interactively
