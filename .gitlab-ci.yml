@@ -1,6 +1,7 @@
 stages:
   - plan
   - apply
+  - bootstrap
 
 variables:
   TF_ROOT: "terraform/environments/cloud/aws/foundation-prod"
@@ -153,7 +154,7 @@ terraform_apply:
 
 bootstrap_aws_vm:
   extends: .setup_and_auth
-  stage: apply
+  stage: bootstrap
   needs:
     - job: terraform_apply
       artifacts: true # This automatically loads the build.env variables!
