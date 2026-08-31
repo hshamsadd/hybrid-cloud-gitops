@@ -1,0 +1,17 @@
+# .gitlab/ci/docker/build-runner.yml
+
+build_ci_image:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [ "" ]
+  script:
+    - echo "Building and pushing custom CI image to GitLab Registry..."
+    - mkdir -p /kaniko/.docker
+    - echo "{\"auths\":{\"${CI_REGISTRY}\":{\"auth\":\"$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')\"}}}" > /kaniko/.docker/config.json
+    - >-
+      /kaniko/executor  --context "${CI_PROJECT_DIR}/docker/ci-runner"  --dockerfile "${CI_PROJECT_DIR}/docker/ci-runner/Dockerfile"  --destination "${CI_REGISTRY_IMAGE}/ci-runner:latest"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - docker/ci-runner/Dockerfile

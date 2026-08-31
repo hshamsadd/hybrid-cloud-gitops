@@ -1,0 +1,30 @@
+# .gitlab/ci/terraform/aws-foundation.yml
+
+aws_terraform_plan:
+  extends: .aws_setup_and_auth
+  stage: plan
+  script:
+    - terraform -chdir="$TF_ROOT" fmt -check -recursive
+    - terraform -chdir="$TF_ROOT" init -input=false
+    - terraform -chdir="$TF_ROOT" validate
+    - terraform -chdir="$TF_ROOT" plan -input=false
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+
+aws_terraform_apply:
+  extends: .aws_setup_and_auth
+  stage: apply
+  script:
+    - terraform -chdir="$TF_ROOT" init -input=false
+    - terraform -chdir="$TF_ROOT" apply -input=false -auto-approve
+
+    - echo "VM_NAME=$(terraform -chdir="$TF_ROOT" output -raw vm_name)" >> aws-build.env
+    - echo "VM_USER=$(terraform -chdir="$TF_ROOT" output -raw vm_user)" >> aws-build.env
+    - echo "K3S_NODE_NAME=$(terraform -chdir="$TF_ROOT" output -raw k3s_node_name)" >> aws-build.env
+    - echo "VM_PUBLIC_IP=$(terraform -chdir="$TF_ROOT" output -raw vm_public_ip)" >> aws-build.env
+  artifacts:
+    reports:
+      dotenv: aws-build.env
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
