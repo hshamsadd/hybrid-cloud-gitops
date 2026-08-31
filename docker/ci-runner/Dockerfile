@@ -28,7 +28,7 @@ RUN mkdir -p --mode=0755 /usr/share/keyrings \
 
 # 3. Install Cloud CLIs, Vault, Terraform, and Tailscale via APT
 RUN apt-get update -yqq && apt-get install -yqq --no-install-recommends \
-    terraform vault tailscale azure-cli \
+    terraform=1.16.0-* vault tailscale azure-cli \
     && rm -rf /var/lib/apt/lists/*
 
 # 4. Install AWS CLI v2 (Standalone binary to prevent Python conflicts)
