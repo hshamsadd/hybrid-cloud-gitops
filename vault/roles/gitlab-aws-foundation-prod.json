@@ -4,14 +4,13 @@
   "bound_audiences": [
     "vault:core-platform"
   ],
-  "bound_subject": "project_path:hshamsadd-cloud-labs/platform-engineering/hybrid-cloud-gitops:ref_type:branch:ref:main:environment:production",
+  "bound_subject": "project_path:hshamsadd-cloud-labs/platform-engineering/hybrid-cloud-gitops:ref_type:branch:ref:main",
   "bound_claims_type": "string",
   "bound_claims": {
     "project_path": "hshamsadd-cloud-labs/platform-engineering/hybrid-cloud-gitops",
     "project_id": "85890197",
     "ref": "main",
-    "ref_type": "branch",
-    "environment": "production"
+    "ref_type": "branch"
   },
   "token_policies": [
     "pipeline-aws-foundation-prod"

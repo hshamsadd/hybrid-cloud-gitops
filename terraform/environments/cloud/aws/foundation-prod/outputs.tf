@@ -11,7 +11,7 @@ output "vm_user" {
 
 output "k3s_node_name" {
   description = "Kubernetes and Tailscale node name"
-  value       = var.vm_name
+  value       = var.k3s_node_name
 }
 
 output "instance_id" {

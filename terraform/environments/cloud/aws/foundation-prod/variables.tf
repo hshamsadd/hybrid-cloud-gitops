@@ -39,8 +39,8 @@ variable "aws_region" {
   default     = "eu-west-1"
 }
 
-# variable "k3s_node_name" {
-#   type        = string
-#   description = "Node name registered with K3s."
-#   #default     = "worker-"
-# }
+variable "k3s_node_name" {
+  type        = string
+  description = "Node name registered with K3s."
+  default     = "worker-05"
+}
