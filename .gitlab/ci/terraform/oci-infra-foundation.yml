@@ -1,0 +1,16 @@
+variables:
+  TF_ROOT: "terraform/environments/cloud/oci/compute-prod"
+
+oci_terraform_plan:
+  extends: .oci_setup_and_auth
+  stage: plan
+  script:
+    - terraform -chdir="$TF_ROOT" fmt -check -recursive
+    - terraform -chdir="$TF_ROOT" init -input=false
+    - terraform -chdir="$TF_ROOT" validate
+    - terraform -chdir="$TF_ROOT" plan -input=false
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - terraform/environments/cloud/oci/compute-prod/**/*
+      when: manual

@@ -1,3 +1,6 @@
+variables:
+  TF_ROOT: "terraform/environments/cloud/aws/foundation-prod"
+
 aws_terraform_plan:
   extends: .aws_setup_and_auth
   stage: plan
@@ -8,6 +11,9 @@ aws_terraform_plan:
     - terraform -chdir="$TF_ROOT" plan -input=false
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - terraform/environments/cloud/aws/foundation-prod/**/*
+      when: manual
 
 aws_terraform_apply:
   extends: .aws_setup_and_auth
@@ -25,4 +31,13 @@ aws_terraform_apply:
       dotenv: aws-build.env
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      changes:
+        - terraform/environments/cloud/aws/foundation-prod/**/*
       when: manual
+
+aws_terraform_destroy:
+  extends: .aws_setup_and_auth
+  stage: destroy
+  script:
+    - terraform -chdir="$TF_ROOT" init -input=false
+    - terraform -chdir="$TF_ROOT" destroy -input=false -auto-approve
