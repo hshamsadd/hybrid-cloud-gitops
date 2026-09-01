@@ -30,9 +30,9 @@ azure_bicep_plan:
         --parameters deployAks=false adminSshKey="${RUNNER_SSH_PUB_KEY}" adminUsername="${VM_USER}"
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-      changes:
-        - bicep/**/*
-      when: manual
+      # changes:
+      #   - bicep/**/*
+      # when: manual
 
 azure_bicep_apply:
   extends: .azure_setup_and_auth
@@ -73,6 +73,6 @@ azure_bicep_apply:
       dotenv: azure-build.env
   rules:
     - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
-      changes:
-        - bicep/**/*
-      when: manual
+      # changes:
+      #   - bicep/**/*
+      # when: manual
