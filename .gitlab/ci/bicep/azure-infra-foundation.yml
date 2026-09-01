@@ -16,7 +16,9 @@ workflow:
 
 bicep-ansible-job:
   stage: bicep-ansible
-  image: ://microsoft.com # Ensuring azure-cli environment out-of-the-box
+  image:
+    name: ://microsoft.com
+    entrypoint: [ "" ] # Ensuring azure-cli environment out-of-the-box
   timeout: 60 minutes
   environment:
     name: production
