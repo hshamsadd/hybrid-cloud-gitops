@@ -1,25 +1,27 @@
 stages:
-  # - build # CI Tooling & Docker images
-  # - plan # Infrastructure Dry-Runs
-  # - apply # Infrastructure Provisioning
-  # - bootstrap # Configuration Management (Ansible/K3s)
+  - build # CI Tooling & Docker images
+  - plan # Infrastructure Dry-Runs
+  - apply # Infrastructure Provisioning
+  - bootstrap # Configuration Management (Ansible/K3s)
   # - cleanup    # Manual Destruction
-  - bicep-ansible
+  # - bicep-ansible
 
 variables:
   #TF_IN_AUTOMATION: "true"
   VAULT_ADDR: "https://debian.tailfb03f6.ts.net:8200"
   ANSIBLE_CONFIG: "${CI_PROJECT_DIR}/ansible/ansible.cfg"
   ANSIBLE_ROLES_PATH: "${CI_PROJECT_DIR}/ansible/roles"
+  K3S_CONTROL_HOST: "${K3S_CONTROL_HOST}"
+  K3S_CONTROL_USER: "${K3S_CONTROL_USER}"
 
 include:
-  # - local: '.gitlab/ci/docker/build-runner.yml'
+  - local: '.gitlab/ci/docker/build-runner.yml'
   # - local: '.gitlab/ci/templates/aws-setup-and-auth.yml'
   # - local: '.gitlab/ci/terraform/aws-infra-foundation.yml'
   # - local: '.gitlab/ci/ansible/aws-vm-bootstrap.yml'
-  # - local: '.gitlab/ci/templates/azure-setup-and-auth.yml'
+  - local: '.gitlab/ci/templates/azure-setup-and-auth.yml'
   - local: '.gitlab/ci/bicep/azure-infra-foundation.yml'
-
-# - local: '.gitlab/ci/templates/oci-setup-and-auth.yml'
-# - local: '.gitlab/ci/terraform/oci-infra-foundation.yml'
-# - local: '.gitlab/ci/ansible/oci-vm-bootstrap.yml'
+  - local: '.gitlab/ci/ansible/azure-vm-bootstrap.yml'
+  # - local: '.gitlab/ci/templates/oci-setup-and-auth.yml'
+  # - local: '.gitlab/ci/terraform/oci-infra-foundation.yml'
+  # - local: '.gitlab/ci/ansible/oci-vm-bootstrap.yml'

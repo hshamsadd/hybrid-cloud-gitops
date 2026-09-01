@@ -31,6 +31,10 @@ RUN curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2
     && ./aws/install \
     && rm -rf awscliv2.zip ./aws    
 
+RUN curl -Lo bicep https://github.com/Azure/bicep/releases/latest/download/bicep-linux-x64 \
+    && chmod +x ./bicep \
+    && mv ./bicep /usr/local/bin/bicep
+
 RUN pip3 install --no-cache-dir --upgrade pip \
     && pip3 install --no-cache-dir ansible oci-cli
 

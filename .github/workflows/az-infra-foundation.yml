@@ -132,7 +132,7 @@ jobs:
 
           az deployment sub what-if \
             --name "gha-vm-plan-${{ github.run_id }}" \
-            --location germanywestcentral \
+            --location swedencentral \
             --template-file bicep/main.bicep \
             --parameters bicep/production.bicepparam \
             --parameters deployAks=false adminSshKey="${RUNNER_SSH_PUB_KEY}" adminUsername="${VM_USER}"

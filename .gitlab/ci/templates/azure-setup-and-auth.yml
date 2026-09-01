@@ -1,0 +1,56 @@
+.azure_setup_and_auth:
+  image: ${CI_REGISTRY_IMAGE}/ci-runner:latest
+  environment:
+    name: production
+  id_tokens:
+    VAULT_OIDC_TOKEN:
+      aud: "vault:core-platform"
+    AZURE_OIDC_TOKEN:
+      aud: "api://AzureADTokenExchange"
+  before_script:
+    # 1. Start Tailscale (Userspace Mode)
+    - tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --outbound-http-proxy-listen=localhost:1055 &
+    - sleep 3
+
+    # 2. Tailscale Auth (via OAuth credentials matching Vault provisioner)
+    - |
+      TS_ACCESS_TOKEN=$(curl -s -u "${TS_OAUTH_CLIENT_ID}:${TS_OAUTH_CLIENT_SECRET}" -d "grant_type=client_credentials" https://api.tailscale.com/api/v2/oauth/token | jq -r .access_token)
+      if [ -z "$TS_ACCESS_TOKEN" ] || [ "$TS_ACCESS_TOKEN" = "null" ]; then echo "ERROR: Failed to obtain Tailscale access token."; exit 1; fi
+
+    - |
+      RUNNER_TS_AUTH_KEY=$(curl -s -X POST -H "Authorization: Bearer ${TS_ACCESS_TOKEN}" -H "Content-Type: application/json" -d '{"capabilities":{"devices":{"create":{"reusable":false,"ephemeral":true,"tags":["tag:ci"]}}}}' https://api.tailscale.com/api/v2/tailnet/-/keys | jq -r .key)
+      if [ -z "$RUNNER_TS_AUTH_KEY" ] || [ "$RUNNER_TS_AUTH_KEY" = "null" ]; then echo "ERROR: Failed to create Tailscale auth key."; exit 1; fi
+
+    - tailscale up --authkey="$RUNNER_TS_AUTH_KEY" --hostname="gitlab-runner-${CI_PIPELINE_ID}" --accept-routes --ssh
+
+    # Route Outbound Traffic through Tailscale SOCKS5 Proxy
+    - export ALL_PROXY=socks5h://localhost:1055/
+    - export HTTP_PROXY=http://localhost:1055/
+    - export http_proxy=http://localhost:1055/
+    - export HTTPS_PROXY=http://localhost:1055/
+    - export https_proxy=http://localhost:1055/
+
+    # 3. Authenticate to Vault (Role: azure-foundation-prod)
+    - |
+      VAULT_TOKEN=$(vault write -field=token auth/gitlab-pipeline/login role=azure-foundation-prod jwt="$VAULT_OIDC_TOKEN")
+      if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then echo "ERROR: Failed to authenticate to Vault."; exit 1; fi
+      export VAULT_TOKEN
+
+    - export TS_API_CLIENT_ID=$(vault kv get -mount=kv -field=oauth_client_id platforms/tailscale/provisioner)
+    - export TS_API_CLIENT_SECRET=$(vault kv get -mount=kv -field=oauth_client_secret platforms/tailscale/provisioner)
+
+    # 4. Export Vault SSH CA for Pipeline
+    - |
+      if [ -s "${CI_PROJECT_DIR}/vault/ssh/vault-ssh-user-ca.pub" ]; then
+        export SSH_CA_PUBLIC_KEY="$(cat "${CI_PROJECT_DIR}/vault/ssh/vault-ssh-user-ca.pub")"
+      else
+        echo "ERROR: Vault SSH CA public key not found or empty."
+        exit 1
+      fi
+
+    # 5. Configure Azure Credentials via OIDC
+    - |
+      az login --service-principal \
+        -u "$AZURE_CLIENT_ID" \
+        -t "$AZURE_TENANT_ID" \
+        --federated-token "$AZURE_OIDC_TOKEN"
