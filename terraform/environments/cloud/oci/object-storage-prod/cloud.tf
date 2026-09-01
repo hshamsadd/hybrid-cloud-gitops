@@ -1,4 +1,3 @@
-# cloud.tf
 terraform {
   cloud {
     organization = "zshamsadd-devops"

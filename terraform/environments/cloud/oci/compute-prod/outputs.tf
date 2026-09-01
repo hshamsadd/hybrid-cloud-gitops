@@ -1,4 +1,3 @@
-# outputs.tf
 output "instance_id" {
   value       = oci_core_instance.cloud-node-06.id
   description = "OCI Compute instance OCID."
@@ -15,7 +14,7 @@ output "vm_user" {
 }
 
 output "k3s_node_name" {
-  value       = oci_core_instance.cloud-node-06.display_name
+  value       = var.k3s_node_name
   description = "Node name registered with K3s."
 }
 
@@ -59,8 +58,6 @@ output "compute_instance_id" {
   value       = oci_core_instance.cloud-node-06.id
   description = "The OCID of the deployed compute engine VM instance."
 }
-
-# --- Recommended Additions ---
 
 output "instance_public_ip" {
   value       = oci_core_instance.cloud-node-06.public_ip

@@ -36,7 +36,7 @@ variable "instance_type" {
 variable "aws_region" {
   type        = string
   description = "AWS region for the infrastructure."
-  default     = "eu-west-1"
+  default     = "eu-central-1"
 }
 
 variable "k3s_node_name" {

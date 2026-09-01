@@ -1,4 +1,3 @@
-# main.tf
 ############################################
 # Virtual Cloud Network (VCN)
 ############################################
@@ -80,9 +79,9 @@ resource "oci_core_security_list" "public_sl" {
   }
 }
 
-# ############################################
-# # Data Source: Dynamic Ubuntu 22.04 ARM Finder
-# # ############################################
+#############################################
+# Data Source: Dynamic Ubuntu 22.04 ARM Finder
+##############################################
 data "oci_core_images" "latest_ubuntu_arm" {
   compartment_id           = var.compartment_id
   operating_system         = "Canonical Ubuntu"
@@ -93,9 +92,9 @@ data "oci_core_images" "latest_ubuntu_arm" {
 }
 
 
-# ############################################
-# # Compute Instance
-# ############################################
+#############################################
+# Compute Instance
+#############################################
 resource "oci_core_instance" "cloud-node-06" {
   compartment_id       = var.compartment_id
   shape                = var.cloud-node-06.shape.name

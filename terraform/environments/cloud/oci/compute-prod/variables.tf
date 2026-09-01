@@ -1,4 +1,3 @@
-# variables.tf
 ############################################
 # Compartments
 ############################################
@@ -133,8 +132,8 @@ variable "vm_user" {
   default     = "ubuntu"
 }
 
-# variable "k3s_node_name" {
-#   type        = string
-#   description = "Node name registered with K3s."
-#   # default     = "worker-"
-# }
+variable "k3s_node_name" {
+  type        = string
+  description = "Node name registered with K3s."
+  default     = "worker-06"
+}

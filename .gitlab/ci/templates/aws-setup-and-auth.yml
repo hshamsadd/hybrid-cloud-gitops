@@ -1,5 +1,3 @@
-# .gitlab/ci/templates/aws-setup-and-auth.yml
-
 .aws_setup_and_auth:
   image: ${CI_REGISTRY_IMAGE}/ci-runner:latest
   environment:
@@ -10,11 +8,10 @@
     AWS_OIDC_TOKEN:
       aud: "sts.amazonaws.com"
   before_script:
-    # 1. Start Tailscale
+
     - tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --outbound-http-proxy-listen=localhost:1055 &
     - sleep 3
 
-    # 2. Tailscale Auth
     - |
       TS_ACCESS_TOKEN=$(curl -s -u "${TS_OAUTH_CLIENT_ID}:${TS_OAUTH_CLIENT_SECRET}" -d "grant_type=client_credentials" https://api.tailscale.com/api/v2/oauth/token | jq -r .access_token)
       if [ -z "$TS_ACCESS_TOKEN" ] || [ "$TS_ACCESS_TOKEN" = "null" ]; then echo "ERROR: Failed to obtain Tailscale access token."; exit 1; fi
@@ -25,14 +22,12 @@
 
     - tailscale up --authkey="$RUNNER_TS_AUTH_KEY" --hostname="gitlab-runner-${CI_PIPELINE_ID}" --accept-routes --ssh
 
-    # Route Outbound Traffic through Tailscale
     - export ALL_PROXY=socks5h://localhost:1055/
     - export HTTP_PROXY=http://localhost:1055/
     - export http_proxy=http://localhost:1055/
     - export HTTPS_PROXY=http://localhost:1055/
     - export https_proxy=http://localhost:1055/
 
-    # 3. Vault Auth
     - |
       VAULT_TOKEN=$(vault write -field=token auth/gitlab-pipeline/login role=aws-foundation-prod jwt="$VAULT_OIDC_TOKEN")
       if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then echo "ERROR: Failed to authenticate to Vault."; exit 1; fi
@@ -42,7 +37,6 @@
     - export TS_API_CLIENT_ID=$(vault kv get -mount=kv -field=oauth_client_id platforms/tailscale/provisioner)
     - export TS_API_CLIENT_SECRET=$(vault kv get -mount=kv -field=oauth_client_secret platforms/tailscale/provisioner)
 
-    # 4. AWS OIDC Auth
     - |
       STS_CREDS=$(aws sts assume-role-with-web-identity --role-arn "$AWS_GITLAB_ROLE_ARN" --role-session-name "gitlab-aws-${CI_PIPELINE_ID}" --web-identity-token "$AWS_OIDC_TOKEN" --duration-seconds 3600)
       if [ -z "$STS_CREDS" ]; then echo "ERROR: Failed to assume AWS role."; exit 1; fi
@@ -52,123 +46,3 @@
       export AWS_DEFAULT_REGION="$AWS_REGION"
 
     - export TF_VAR_ssh_ca_public_key=$(cat "${CI_PROJECT_DIR}/vault/ssh/vault-ssh-user-ca.pub")
-
-# stages:
-#   - plan
-#   - apply
-#   - bootstrap
-
-# variables:
-#   TF_ROOT: "terraform/environments/cloud/aws/foundation-prod"
-#   TF_IN_AUTOMATION: "true"
-#   VAULT_ADDR: "https://debian.tailfb03f6.ts.net:8200"
-#   ANSIBLE_CONFIG: "${CI_PROJECT_DIR}/ansible/ansible.cfg"
-#   ANSIBLE_ROLES_PATH: "${CI_PROJECT_DIR}/ansible/roles"
-
-# .setup_and_auth:
-#   image: ubuntu:22.04
-#   environment:
-#     name: production
-#   id_tokens:
-#     VAULT_OIDC_TOKEN:
-#       aud: "vault:core-platform"
-#     AWS_OIDC_TOKEN:
-#       aud: "sts.amazonaws.com"
-#   before_script:
-#     - export DEBIAN_FRONTEND=noninteractive
-#     - export TZ=Europe/Amsterdam
-
-#     # ---------------------------------------------------------------------------
-#     # Install dependencies
-#     # ---------------------------------------------------------------------------
-#     - apt-get update -yqq && apt-get install -yqq curl jq unzip openssh-client ansible awscli software-properties-common python3-pip gnupg
-#     - curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-#     - echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com jammy main" | tee /etc/apt/sources.list.d/hashicorp.list
-#     - apt-get update -yqq && apt-get install -yqq terraform=1.15.8-* vault
-#     - curl -fsSL https://tailscale.com/install.sh | sh
-
-#     # ---------------------------------------------------------------------------
-#     # Phase 1 — Tailscale
-#     # Start the daemon in userspace mode (no systemd in Docker), then connect
-#     # the runner using the OAuth client credentials stored as GitLab CI
-#     # variables (TS_OAUTH_CLIENT_ID / TS_OAUTH_CLIENT_SECRET, environment:
-#     # production). These mirror kv/data/platforms/tailscale/provisioner in
-#     # Vault and are needed here because Vault itself is only reachable over
-#     # the Tailscale tunnel.
-#     # ---------------------------------------------------------------------------
-#     - tailscaled --tun=userspace-networking --socks5-server=localhost:1055 --outbound-http-proxy-listen=localhost:1055 &
-#     - sleep 3
-
-#     - |
-#       TS_ACCESS_TOKEN=$(curl -s \
-#         -u "${TS_OAUTH_CLIENT_ID}:${TS_OAUTH_CLIENT_SECRET}" \
-#         -d "grant_type=client_credentials" \
-#         https://api.tailscale.com/api/v2/oauth/token | jq -r .access_token)
-#       if [ -z "$TS_ACCESS_TOKEN" ] || [ "$TS_ACCESS_TOKEN" = "null" ]; then
-#         echo "ERROR: Failed to obtain Tailscale access token."
-#         echo "Check TS_OAUTH_CLIENT_ID and TS_OAUTH_CLIENT_SECRET CI variables."
-#         exit 1
-#       fi
-
-#     - |
-#       RUNNER_TS_AUTH_KEY=$(curl -s -X POST \
-#         -H "Authorization: Bearer ${TS_ACCESS_TOKEN}" \
-#         -H "Content-Type: application/json" \
-#         -d '{"capabilities":{"devices":{"create":{"reusable":false,"ephemeral":true,"tags":["tag:ci"]}}}}' \
-#         https://api.tailscale.com/api/v2/tailnet/-/keys | jq -r .key)
-#       if [ -z "$RUNNER_TS_AUTH_KEY" ] || [ "$RUNNER_TS_AUTH_KEY" = "null" ]; then
-#         echo "ERROR: Failed to create Tailscale auth key."
-#         echo "Ensure the OAuth client has the 'keys' write scope."
-#         exit 1
-#       fi
-
-#     - tailscale up --authkey="$RUNNER_TS_AUTH_KEY" --hostname="gitlab-runner-${CI_PIPELINE_ID}" --accept-routes --ssh
-
-#     # Route all outbound traffic through the Tailscale userspace proxy so
-#     # private hosts (Vault, K3s control plane, etc.) are reachable.
-#     - export ALL_PROXY=socks5h://localhost:1055/
-#     - export HTTP_PROXY=http://localhost:1055/
-#     - export http_proxy=http://localhost:1055/
-#     - export HTTPS_PROXY=http://localhost:1055/
-#     - export https_proxy=http://localhost:1055/
-
-#     # ---------------------------------------------------------------------------
-#     # Phase 2 — Vault (reachable now that the tunnel is up)
-#     # Authenticate with the GitLab OIDC token and pull all remaining secrets.
-#     # ---------------------------------------------------------------------------
-#     - |
-#       VAULT_TOKEN=$(vault write -field=token \
-#         auth/gitlab-pipeline/login \
-#         role=aws-foundation-prod \
-#         jwt="$VAULT_OIDC_TOKEN")
-#       if [ -z "$VAULT_TOKEN" ] || [ "$VAULT_TOKEN" = "null" ]; then
-#         echo "ERROR: Failed to authenticate to Vault."
-#         exit 1
-#       fi
-#       export VAULT_TOKEN
-
-#     - export TF_TOKEN_app_terraform_io=$(vault kv get -mount=kv -field=token platforms/hcp-terraform/ci)
-#     # TS_API_CLIENT_ID/SECRET are used by scripts/tailscale/create-node-auth-key.sh
-#     # during the apply stage to enroll the new AWS VM into the tailnet.
-#     - export TS_API_CLIENT_ID=$(vault kv get -mount=kv -field=oauth_client_id platforms/tailscale/provisioner)
-#     - export TS_API_CLIENT_SECRET=$(vault kv get -mount=kv -field=oauth_client_secret platforms/tailscale/provisioner)
-
-#     # ---------------------------------------------------------------------------
-#     # Phase 3 — AWS (assume role via OIDC)
-#     # ---------------------------------------------------------------------------
-#     - |
-#       STS_CREDS=$(aws sts assume-role-with-web-identity \
-#         --role-arn "$AWS_GITLAB_ROLE_ARN" \
-#         --role-session-name "gitlab-aws-${CI_PIPELINE_ID}" \
-#         --web-identity-token "$AWS_OIDC_TOKEN" \
-#         --duration-seconds 3600)
-#       if [ -z "$STS_CREDS" ]; then
-#         echo "ERROR: Failed to assume AWS role."
-#         exit 1
-#       fi
-#       export AWS_ACCESS_KEY_ID=$(echo "$STS_CREDS"     | jq -r '.Credentials.AccessKeyId')
-#       export AWS_SECRET_ACCESS_KEY=$(echo "$STS_CREDS" | jq -r '.Credentials.SecretAccessKey')
-#       export AWS_SESSION_TOKEN=$(echo "$STS_CREDS"     | jq -r '.Credentials.SessionToken')
-#       export AWS_DEFAULT_REGION="$AWS_REGION"
-
-#     - export TF_VAR_ssh_ca_public_key=$(cat "${CI_PROJECT_DIR}/vault/ssh/vault-ssh-user-ca.pub")

@@ -74,7 +74,7 @@ jobs:
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v4.0.0
         with:
-          terraform_version: 1.15.8
+          terraform_version: 1.16.0
           terraform_wrapper: false
 
       - name: Add host-local tools to PATH

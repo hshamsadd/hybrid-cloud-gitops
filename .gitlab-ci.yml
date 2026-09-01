@@ -1,5 +1,3 @@
-# .gitlab-ci.yml
-
 stages:
   - build # CI Tooling & Docker images
   - plan # Infrastructure Dry-Runs
@@ -13,9 +11,6 @@ variables:
   ANSIBLE_CONFIG: "${CI_PROJECT_DIR}/ansible/ansible.cfg"
   ANSIBLE_ROLES_PATH: "${CI_PROJECT_DIR}/ansible/roles"
 
-# ==============================================================================
-# Modular Pipeline Includes
-# ==============================================================================
 include:
   - local: '.gitlab/ci/templates/aws-setup-and-auth.yml'
   - local: '.gitlab/ci/docker/build-runner.yml'

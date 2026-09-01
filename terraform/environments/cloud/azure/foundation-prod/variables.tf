@@ -5,5 +5,5 @@ variable "environment" {
 
 variable "location" {
   type    = string
-  default = "westeurope" # Standard for NL/EU deployments
+  default = "westeurope"
 }

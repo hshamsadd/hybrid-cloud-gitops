@@ -1,5 +1,3 @@
-#cloud-config
-
 write_files:
   - path: /etc/ssh/vault-user-ca.pub
     owner: root:root

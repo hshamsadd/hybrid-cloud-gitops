@@ -1,5 +1,3 @@
-# .gitlab/ci/docker/build-runner.yml
-
 build_ci_image:
   stage: build
   image:

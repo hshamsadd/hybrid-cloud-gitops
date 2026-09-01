@@ -1,6 +1,3 @@
-#################################
-# Outputs
-#################################
 output "vm_name" {
   description = "Libvirt domain and Linux hostname."
   value       = libvirt_domain.vm.name

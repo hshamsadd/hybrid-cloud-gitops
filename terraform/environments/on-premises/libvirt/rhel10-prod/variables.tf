@@ -54,13 +54,13 @@ variable "vm_mac" {
 variable "vm_hostname" {
   description = "Libvirt domain and Linux hostname."
   type        = string
-  default     = "ubuntu-vm-1"
+  default     = "cloud-node-00"
 }
 
 variable "k3s_node_name" {
   description = "Node name registered in the K3s cluster."
   type        = string
-  default     = "worker-3"
+  default     = "worker-00"
 }
 
 variable "vm_memory" {

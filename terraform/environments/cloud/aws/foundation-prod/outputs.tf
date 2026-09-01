@@ -1,4 +1,3 @@
-# Outputs
 output "vm_name" {
   description = "Name of the AWS EC2 worker"
   value       = var.vm_name
