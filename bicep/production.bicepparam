@@ -1,7 +1,7 @@
 using 'main.bicep'
 
 param location = 'swedencentral'
-param rgName = 'rg-bicep-foundation-prod'
+param rgName = 'rg-bicep-foundation-prod-02'
 param deployAks = false
 param deployVms = true
 

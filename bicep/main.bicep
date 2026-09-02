@@ -21,7 +21,7 @@ module vnetwork 'modules/network.bicep' = if (deployVms || deployAks) {
   name: 'vnetworkDeployment'
   params: {
     location: location
-    vnetName: 'vnet-bicep-prod-01'
+    vnetName: 'vnet-bicep-prod-02'
   }
 }
 
@@ -44,6 +44,6 @@ module aks 'modules/aks.bicep' = if (deployAks) {
   name: 'aksDeployment'
   params: {
     location: location
-    clusterName: 'aks-bicep-prod-01'
+    clusterName: 'aks-bicep-prod-02'
   }
 }
