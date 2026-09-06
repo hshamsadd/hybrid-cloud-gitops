@@ -58,7 +58,7 @@ jobs:
           secrets: |
             kv/data/platforms/hcp-terraform/ci token | TF_TOKEN_app_terraform_io ;
             kv/data/platforms/tailscale/provisioner oauth_client_id | TS_API_CLIENT_ID ;
-            kv/data/platforms/tailscale/provisioner oauth_client_secret | TS_API_CLIENT_SECRET
+            kv/data/platforms/tailscale/provisioner oauth_client_secret | TS_API_CLIENT_SECRET ;
             kv/data/platforms/proxmox/ci proxmox_api_url | TF_VAR_proxmox_api_url ;
             kv/data/platforms/proxmox/ci proxmox_api_token_id | TF_VAR_proxmox_api_token_id ;
             kv/data/platforms/proxmox/ci proxmox_api_token_secret | TF_VAR_proxmox_api_token_secret
