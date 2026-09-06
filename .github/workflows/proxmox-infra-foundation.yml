@@ -17,7 +17,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: proxmox-infra-prod
+  group: proxmox-infra-core
   cancel-in-progress: false
 
 jobs:

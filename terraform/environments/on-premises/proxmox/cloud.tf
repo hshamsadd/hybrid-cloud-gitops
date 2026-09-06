@@ -3,7 +3,7 @@ terraform {
     organization = "zshamsadd-devops"
 
     workspaces {
-      project = "On-Premises"
+      project = "Cloud"
       name    = "proxmox-infra-core"
     }
   }
