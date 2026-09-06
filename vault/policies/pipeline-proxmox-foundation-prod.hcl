@@ -6,6 +6,10 @@ path "kv/data/platforms/tailscale/provisioner" {
   capabilities = ["read"]
 }
 
+path "kv/data/platforms/proxmox/ci" {
+  capabilities = ["read"]
+}
+
 path "ssh-client-signer/sign/homelab-ci" {
   capabilities = ["update"]
 }
