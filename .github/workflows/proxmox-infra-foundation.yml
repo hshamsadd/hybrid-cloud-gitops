@@ -44,7 +44,7 @@ jobs:
           oauth-client-id: ${{ vars.TS_WIF_CLIENT_ID }}
           audience: ${{ vars.TS_WIF_AUDIENCE }}
           tags: tag:ci
-          ping: 100.72.2.6
+          ping: debian.tailfb03f6.ts.net
 
       - name: Authenticate to Vault
         uses: hashicorp/vault-action@v4.0.0
