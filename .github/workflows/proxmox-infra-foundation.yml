@@ -61,7 +61,10 @@ jobs:
             kv/data/platforms/tailscale/provisioner oauth_client_secret | TS_API_CLIENT_SECRET ;
             kv/data/platforms/proxmox/ci proxmox_api_url | TF_VAR_proxmox_api_url ;
             kv/data/platforms/proxmox/ci proxmox_api_token_id | TF_VAR_proxmox_api_token_id ;
-            kv/data/platforms/proxmox/ci proxmox_api_token_secret | TF_VAR_proxmox_api_token_secret
+            kv/data/platforms/proxmox/ci proxmox_api_token_secret | TF_VAR_proxmox_api_token_secret ;
+            kv/data/platforms/proxmox/ci proxmox_address | TF_VAR_proxmox_address ;
+            kv/data/platforms/proxmox/ci proxmox_user | TF_VAR_proxmox_user ;
+            kv/data/platforms/proxmox/ci proxmox_password | TF_VAR_proxmox_password
 
       - name: Export Vault SSH CA for Terraform
         shell: bash
