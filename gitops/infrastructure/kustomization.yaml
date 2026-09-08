@@ -8,7 +8,7 @@ resources:
   - cert-manager/manual-local-cert.yaml
   - vault-secrets-operator
   - monitoring-stack
-  - coredns
+  #- coredns
   - networking/vault-external.yaml
   - networking/external-docker-bridge.yaml
   - networking/traefik-gateway-rbac.yaml
