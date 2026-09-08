@@ -2,8 +2,5 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # Inherit the ENTIRE infrastructure stack (cert-manager, vault, monitoring, networking, etc.)
   - ../../../infrastructure
-
-  # Inject hardware-bound Proxmox IP pool L2 advertisement
   - proxmox-ip-pool.yaml
