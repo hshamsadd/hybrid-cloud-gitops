@@ -1,0 +1,25 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: proxmox-pool
+  namespace: metallb-system
+spec:
+  addresses:
+    - 172.16.0.240-172.16.0.250
+---
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: proxmox-l2-adv
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+    - proxmox-pool
+  nodeSelectors:
+    - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+            - k8s-master
+            - k8s-worker1
+            - k8s-worker2

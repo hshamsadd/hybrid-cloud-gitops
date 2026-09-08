@@ -5,7 +5,7 @@ variable "proxmox_api_url" {
 
 variable "proxmox_api_token_id" {
   type        = string
-  description = "The Proxmox API token identifier (user@realm!tokenid)"
+  description = "The Proxmox API token identifier"
   sensitive   = true
 }
 

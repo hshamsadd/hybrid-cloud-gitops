@@ -1,4 +1,3 @@
-# 1. Render the YAML template and upload it to Proxmox as a Snippet
 resource "proxmox_virtual_environment_file" "cloud_init_user_data" {
   # We create one file per node so Terraform tracks them cleanly
   for_each = local.k8s_nodes

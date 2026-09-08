@@ -1,5 +1,4 @@
 provider "proxmox" {
-
   # API Authentication
   endpoint = var.proxmox_api_url
   username = "${var.proxmox_user}@pam"

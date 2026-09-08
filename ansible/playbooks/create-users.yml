@@ -1,0 +1,29 @@
+- name: Configure Enterprise Users
+  hosts: all
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Ensure zshamsadd group exists
+      ansible.builtin.group:
+        name: zshamsadd
+        state: present
+
+    - name: Create zshamsadd user with locked password
+      ansible.builtin.user:
+        name: zshamsadd
+        group: zshamsadd
+        groups: sudo
+        append: true
+        shell: /bin/bash
+        password: "!"
+        create_home: true
+
+    - name: Configure passwordless sudo for zshamsadd
+      ansible.builtin.copy:
+        content: "zshamsadd ALL=(ALL) NOPASSWD:ALL\n"
+        dest: /etc/sudoers.d/99-zshamsadd
+        owner: root
+        group: root
+        mode: "0440"
+        validate: /usr/sbin/visudo -cf %s

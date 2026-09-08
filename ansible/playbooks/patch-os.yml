@@ -1,26 +1,13 @@
-- name: Perform OS Updates, Rolling Patching, and K8s Lifecycle
+- name: Configure Base OS and Apply Updates
   hosts: all
   become: true
   gather_facts: true
-  serial: 1 # CRITICAL: Patches one node completely before moving to the next
-
-  vars:
-    # Dynamically map Azure VM names (cloud-node-03) to K3s node names (worker-03)
-    k3s_node_name: "{{ inventory_hostname | replace('cloud-node', 'worker') }}"
+  serial: 1
 
   tasks:
-    - name: Cordon the Kubernetes node (Stop scheduling new pods)
-      delegate_to: localhost
-      become: false
-      ansible.builtin.command: "kubectl cordon {{ k3s_node_name }}"
-      ignore_errors: true # Prevents playbook crash if you run this from a machine without kubeconfig
-
-    - name: Drain the Kubernetes node (Evict workloads safely)
-      delegate_to: localhost
-      become: false
-      ansible.builtin.command: >
-        kubectl drain {{ k3s_node_name }} --ignore-daemonsets --delete-emptydir-data --force --grace-period=60 --timeout=5m
-      ignore_errors: true
+    - name: Set system hostname from inventory
+      ansible.builtin.hostname:
+        name: "{{ inventory_hostname }}"
 
     - name: Update APT cache and run full OS upgrade
       ansible.builtin.apt:
@@ -44,9 +31,3 @@
         post_reboot_delay: 30
         test_command: uptime
       when: reboot_required_file.stat.exists
-
-    - name: Uncordon the Kubernetes node (Resume scheduling)
-      delegate_to: localhost
-      become: false
-      ansible.builtin.command: "kubectl uncordon {{ k3s_node_name }}"
-      ignore_errors: true

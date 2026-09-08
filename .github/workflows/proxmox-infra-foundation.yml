@@ -1,5 +1,4 @@
 name: Proxmox Foundation
-
 on:
   workflow_dispatch:
     inputs:
@@ -11,7 +10,6 @@ on:
         options:
           - plan
           - apply
-
 permissions:
   contents: read
   id-token: write
@@ -19,14 +17,12 @@ permissions:
 concurrency:
   group: proxmox-infra-core
   cancel-in-progress: false
-
 jobs:
   terraform-infrastructure:
     name: Proxmox Terraform Deployment
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 60
-
     env:
       TF_ROOT: terraform/environments/on-premises/proxmox
       TF_IN_AUTOMATION: "true"
@@ -45,6 +41,7 @@ jobs:
           audience: ${{ vars.TS_WIF_AUDIENCE }}
           tags: tag:ci
           ping: debian.tailfb03f6.ts.net
+          args: --accept-routes
 
       - name: Authenticate to Vault
         uses: hashicorp/vault-action@v4.0.0

@@ -41,7 +41,11 @@ REQUEST_BODY="$(
     '{
       public_key: $public_key,
       valid_principals: $principal,
-      ttl: $ttl
+      ttl: $ttl,
+      extensions: {
+        "permit-pty": "",
+        "permit-port-forwarding": ""
+      }
     }'
 )"
 

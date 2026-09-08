@@ -1,0 +1,131 @@
+---
+- name: Prepare OS and Install Kubeadm Binaries (v1.36.3)
+  hosts: k3s_control_plane,k3s_workers
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Ensure local hostnames resolve in /etc/hosts
+      ansible.builtin.lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+        regexp: ".*\\s+{{ item }}$"
+        state: present
+      loop: "{{ groups['k3s_control_plane'] + groups['k3s_workers'] }}"
+      when: hostvars[item]['ansible_host'] is defined
+
+    - name: Disable UFW firewall
+      ansible.builtin.systemd:
+        name: ufw
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Disable swap immediately
+      ansible.builtin.command: swapoff -a
+      when: ansible_swaptotal_mb > 0
+
+    - name: Remove swap entry from /etc/fstab
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([^#].*\s+swap\s+.*)$'
+        replace: '# \1'
+
+    - name: Load required kernel modules
+      ansible.builtin.command: "modprobe {{ item }}"
+      loop:
+        - overlay
+        - br_netfilter
+      changed_when: false
+
+    - name: Ensure kernel modules load on boot
+      ansible.builtin.copy:
+        content: |
+          overlay
+          br_netfilter
+        dest: /etc/modules-load.d/k8s.conf
+        mode: "0644"
+
+    - name: Configure sysctl parameters for Kubernetes networking
+      ansible.builtin.copy:
+        content: |
+          net.bridge.bridge-nf-call-iptables = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward = 1
+        dest: /etc/sysctl.d/k8s.conf
+        mode: "0644"
+
+    - name: Apply sysctl parameters
+      ansible.builtin.command: sysctl --system
+      changed_when: false
+
+    - name: Install required OS utilities & containerd
+      ansible.builtin.apt:
+        name:
+          - containerd
+          - socat
+          - conntrack
+          - ipset
+          - ebtables
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Ensure containerd config directory exists
+      ansible.builtin.file:
+        path: /etc/containerd
+        state: directory
+        mode: "0755"
+
+    - name: Generate default containerd config with SystemdCgroup enabled
+      ansible.builtin.shell: |
+        containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/' > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: Restart and enable Containerd service
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
+        enabled: true
+
+    - name: Create APT keyring directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Kubernetes APT repository keyring (v1.36)
+      ansible.builtin.get_url:
+        url: https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+        mode: "0644"
+        force: false
+
+    - name: Add Kubernetes APT repository (v1.36)
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.asc] https://pkgs.k8s.io/core:/stable:/v1.36/deb/ /"
+        state: present
+        filename: kubernetes
+
+    - name: Install kubelet, kubeadm, and kubectl (Pinned to v1.36.3)
+      ansible.builtin.apt:
+        name:
+          - kubelet=1.36.3-*
+          - kubeadm=1.36.3-*
+          - kubectl=1.36.3-*
+        state: present
+        update_cache: true
+        allow_downgrade: true
+
+    - name: Hold Kubernetes package versions
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
