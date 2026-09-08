@@ -5,5 +5,5 @@ resources:
   # Inherit the ENTIRE infrastructure stack (cert-manager, vault, monitoring, networking, etc.)
   - ../../../infrastructure
 
-  # Inject your hardware-bound Proxmox IP pool L2 advertisement
+  # Inject hardware-bound Proxmox IP pool L2 advertisement
   - proxmox-ip-pool.yaml
