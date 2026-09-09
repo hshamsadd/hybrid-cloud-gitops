@@ -41,7 +41,7 @@ jobs:
           audience: ${{ vars.TS_WIF_AUDIENCE }}
           tags: tag:ci
           ping: debian.tailfb03f6.ts.net
-          args: --accept-routes
+          #args: --accept-routes
 
       - name: Authenticate to Vault
         uses: hashicorp/vault-action@v4.0.0
