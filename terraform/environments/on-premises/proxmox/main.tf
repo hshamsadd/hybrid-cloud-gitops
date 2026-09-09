@@ -1,6 +1,6 @@
 resource "proxmox_virtual_environment_file" "cloud_init_user_data" {
   # We create one file per node so Terraform tracks them cleanly
-  for_each = local.k8s_nodes
+  for_each = local.k3s_nodes
 
   content_type = "snippets"
   datastore_id = "local"
@@ -12,15 +12,15 @@ resource "proxmox_virtual_environment_file" "cloud_init_user_data" {
       ssh_ca_public_key = var.ssh_ca_public_key
     }
     )
-    file_name = "user-data-k8s-${each.key}.yaml"
+    file_name = "user-data-k3s-${each.key}.yaml"
   }
 }
 
 # 2. Clone the Kubernetes VMs from template 9000
-resource "proxmox_virtual_environment_vm" "k8s_cluster" {
-  for_each = local.k8s_nodes
+resource "proxmox_virtual_environment_vm" "k3s_cluster" {
+  for_each = local.k3s_nodes
 
-  name      = "k8s-${each.key}"
+  name      = "k3s-${each.key}"
   node_name = "proxmox-01"
 
   # Matches: template: 1 (using VM 9000)
@@ -36,12 +36,14 @@ resource "proxmox_virtual_environment_vm" "k8s_cluster" {
   # Matches: cpu: host, cores: 2
   cpu {
     cores = each.value.cpu
+    sockets = 1
     type  = "host"
   }
 
   # Matches: memory: 2048
   memory {
     dedicated = each.value.ram
+    floating  = each.value.ram
   }
 
   # Matches: scsihw: virtio-scsi-single
@@ -52,7 +54,7 @@ resource "proxmox_virtual_environment_vm" "k8s_cluster" {
   disk {
     datastore_id = "local-lvm"
     interface    = "scsi0"
-    size         = 30
+    size         = 80
     # You do not need discard or iothread here if they are already on the template, 
     # but defining them ensures Terraform enforces it.
     discard  = "on"
@@ -69,7 +71,7 @@ resource "proxmox_virtual_environment_vm" "k8s_cluster" {
     # Link the uploaded Snippet from Step 1
     user_data_file_id = proxmox_virtual_environment_file.cloud_init_user_data[each.key].id
 
-    # IP injection stays natively in HCL so you can loop through local.k8s_nodes
+    # IP injection stays natively in HCL so you can loop through local.k3s_nodes
     ip_config {
       ipv4 {
         address = "${each.value.ip}/24"
