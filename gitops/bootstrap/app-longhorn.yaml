@@ -15,6 +15,11 @@ spec:
           value: /var/lib/longhorn
         - name: preUpgradeChecker.jobEnabled
           value: "false"
+  ignoreDifferences:
+    - group: apiextensions.k8s.io
+      kind: CustomResourceDefinition
+      jsonPointers:
+        - /spec/preserveUnknownFields
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: longhorn-system
