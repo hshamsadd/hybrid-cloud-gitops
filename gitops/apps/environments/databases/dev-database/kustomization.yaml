@@ -5,7 +5,7 @@ namespace: dev
 resources:
   - ../../../base/minio
   - ../../../base/redis
-  - minio-local-pv.yaml
+  #- minio-local-pv.yaml
   - minio-bucket-job.yaml
   - central-postgres-dev.yaml
   - barman-objectstore.yaml

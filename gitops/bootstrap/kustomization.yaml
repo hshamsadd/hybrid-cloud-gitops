@@ -5,6 +5,7 @@ resources:
   - root-application.yaml
   - app-infrastructure.yaml
   - app-monitoring.yaml
+  - app-longhorn.yaml
   - cluster-setup.yaml
   - stack-apps.yaml
   - stack-secrets.yaml

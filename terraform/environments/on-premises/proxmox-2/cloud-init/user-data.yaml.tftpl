@@ -1,0 +1,37 @@
+#cloud-config
+package_update: true
+packages:
+  - qemu-guest-agent
+
+write_files:
+  - path: /etc/ssh/vault-user-ca.pub
+    owner: root:root
+    permissions: "0644"
+    content: |
+      ${ssh_ca_public_key}
+
+  - path: /etc/ssh/sshd_config.d/90-vault-user-ca.conf
+    owner: root:root
+    permissions: "0644"
+    content: |
+      TrustedUserCAKeys /etc/ssh/vault-user-ca.pub
+      PubkeyAuthentication yes
+      PasswordAuthentication yes
+      KbdInteractiveAuthentication yes
+      PermitRootLogin no
+
+runcmd:
+  # Start Proxmox agent
+  - [ systemctl, enable, --now, qemu-guest-agent ]
+  # Validate and restart SSH with Vault CA config
+  - [ /usr/sbin/sshd, -t ]
+  - [ systemctl, restart, ssh ]
+
+users:
+  - default
+  - name: zshamsadd
+    passwd: "Kooora2016!"
+    lock_passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+ssh_pwauth: true

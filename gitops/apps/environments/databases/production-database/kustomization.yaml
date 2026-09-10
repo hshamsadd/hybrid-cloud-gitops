@@ -9,7 +9,7 @@ resources:
   - barman-objectstore.yaml
   - scheduled-backup-ha.yaml
   - oci-postgres-dr-mirror-cronjob.yaml
-  - minio-local-pv.yaml
+  #- minio-local-pv.yaml
   - minio-bucket-job.yaml
 
 patches:
