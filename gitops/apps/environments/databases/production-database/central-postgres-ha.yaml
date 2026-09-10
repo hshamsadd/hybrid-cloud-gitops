@@ -30,20 +30,20 @@ spec:
         value: "database"
         effect: "NoSchedule"
 
-  # bootstrap:
-  #   initdb:
-  #     database: wallabag
-  #     owner: wallabag_user
-  #     secret:
-  #       name: cnpg-wallabag-credentials-vault
-
   bootstrap:
-    recovery:
+    initdb:
       database: wallabag
       owner: wallabag_user
       secret:
         name: cnpg-wallabag-credentials-vault
-      source: central-postgres-ha-backup
+
+  # bootstrap:
+  #   recovery:
+  #     database: wallabag
+  #     owner: wallabag_user
+  #     secret:
+  #       name: cnpg-wallabag-credentials-vault
+  #     source: central-postgres-ha-backup
 
   externalClusters:
     - name: central-postgres-ha-backup
