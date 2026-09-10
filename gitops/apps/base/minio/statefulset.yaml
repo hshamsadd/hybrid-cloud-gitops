@@ -15,8 +15,6 @@ spec:
       labels:
         app: minio
     spec:
-      # nodeSelector:
-      #   kubernetes.io/hostname: server
       securityContext:
         seccompProfile:
           type: RuntimeDefault

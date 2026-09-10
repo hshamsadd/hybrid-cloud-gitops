@@ -37,22 +37,6 @@ spec:
       secret:
         name: cnpg-wallabag-credentials-vault
 
-  # bootstrap:
-  #   recovery:
-  #     database: wallabag
-  #     owner: wallabag_user
-  #     secret:
-  #       name: cnpg-wallabag-credentials-vault
-  #     source: central-postgres-ha-backup
-
-  externalClusters:
-    - name: central-postgres-ha-backup
-      plugin:
-        name: barman-cloud.cloudnative-pg.io
-        parameters:
-          barmanObjectName: minio-postgres-backups
-          serverName: central-postgres-ha
-
   plugins:
     - name: barman-cloud.cloudnative-pg.io
       isWALArchiver: true
