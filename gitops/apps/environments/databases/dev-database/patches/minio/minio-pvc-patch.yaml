@@ -5,8 +5,8 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: minio-dev-local-storage
-  volumeName: minio-dev-local-pv
+  storageClassName: longhorn
+  #volumeName: minio-dev-local-pv
   resources:
     requests:
       storage: 5Gi
