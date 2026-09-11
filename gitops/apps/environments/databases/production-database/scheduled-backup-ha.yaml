@@ -2,11 +2,9 @@ apiVersion: postgresql.cnpg.io/v1
 kind: ScheduledBackup
 metadata:
   name: central-postgres-ha-nightly-backup
-  annotations:
-    argocd.argoproj.io/sync-wave: "2"
 spec:
-  schedule: "0 50 2 * * *" #"0 0 20 * * *"
-  immediate: false
+  schedule: "0 0 20 * * *"
+  immediate: true
   backupOwnerReference: cluster
   method: plugin
   pluginConfiguration:
