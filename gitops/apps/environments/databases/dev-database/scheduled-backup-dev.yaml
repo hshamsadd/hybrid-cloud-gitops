@@ -5,8 +5,8 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
-  schedule: "0 0 21 * * *"
-  immediate: true
+  schedule: "0 8 22 * * *"
+  immediate: false
   backupOwnerReference: cluster
   method: plugin
   pluginConfiguration:
