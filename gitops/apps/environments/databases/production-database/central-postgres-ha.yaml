@@ -51,3 +51,4 @@ spec:
       isWALArchiver: true
       parameters:
         barmanObjectName: minio-postgres-backups
+        serverName: production
