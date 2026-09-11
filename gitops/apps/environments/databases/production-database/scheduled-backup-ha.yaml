@@ -4,7 +4,7 @@ metadata:
   name: central-postgres-ha-nightly-backup
 spec:
   schedule: "0 36 2 * * *" #"0 0 20 * * *"
-  immediate: true
+  immediate: false
   backupOwnerReference: cluster
   method: plugin
   pluginConfiguration:
