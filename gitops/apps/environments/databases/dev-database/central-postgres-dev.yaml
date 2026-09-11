@@ -102,11 +102,20 @@ spec:
         effect: "NoSchedule"
 
   bootstrap:
-    initdb:
+    recovery:
       database: wallabag_dev
       owner: wallabag_dev_user
       secret:
         name: cnpg-wallabag-dev-credentials-vault
+      source: central-postgres-dev-backup
+
+  externalClusters:
+    - name: central-postgres-dev-backup
+      plugin:
+        name: barman-cloud.cloudnative-pg.io
+        parameters:
+          barmanObjectName: dev-postgres-backups
+          serverName: dev
 
   plugins:
     - name: barman-cloud.cloudnative-pg.io
