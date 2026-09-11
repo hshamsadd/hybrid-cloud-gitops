@@ -3,7 +3,7 @@ kind: ScheduledBackup
 metadata:
   name: central-postgres-ha-nightly-backup
 spec:
-  schedule: "0 0 20 * * *"
+  schedule: "0 36 2 * * *" #"0 0 20 * * *"
   immediate: true
   backupOwnerReference: cluster
   method: plugin
