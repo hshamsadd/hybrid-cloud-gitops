@@ -39,4 +39,4 @@ spec:
         name: barman-cloud.cloudnative-pg.io
         parameters:
           barmanObjectName: minio-postgres-backups
-          serverName: prod
+          serverName: production
