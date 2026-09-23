@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: argocd
+
+resources:
+  - argocd-cm.yaml
+  - configmap.yaml
+  - argocd-rbac-cm.yaml
+  - argocd-route.yaml
+
+patches:
+  - path: argocd-platform-deployment.patch.yaml
+    target:
+      group: apps
+      version: v1
+      kind: Deployment
+      labelSelector: app.kubernetes.io/part-of=argocd
+
+  - path: argocd-platform-statefulset.patch.yaml
+    target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      labelSelector: app.kubernetes.io/part-of=argocd
+
+  - path: argocd-redis-ha-server.patch.yaml
+    target:
+      group: apps
+      version: v1
+      kind: StatefulSet
+      name: argocd-redis-ha-server
