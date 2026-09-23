@@ -7,7 +7,7 @@ resources:
   #- infrastructure.yaml
   #- logging.yaml
   #- monitoring.yaml
-  #- storage.yaml
+  - storage.yaml
   - security.yaml
   - argocd.yaml
   # - vault-secrets-operator.yaml

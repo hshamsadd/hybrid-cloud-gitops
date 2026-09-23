@@ -1,0 +1,28 @@
+global:
+  nodeSelector:
+    node-restriction.kubernetes.io/persistent-storage: "true"
+
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+
+persistence:
+  createStorageClass: false
+  defaultClass: false
+
+preUpgradeChecker:
+  jobEnabled: false
+
+defaultSettings:
+  defaultDataPath: /home/longhorn
+  createDefaultDiskLabeledNodes: true
+  replicaSoftAntiAffinity: false
+  replicaAutoBalance: least-effort
+  allowVolumeCreationWithDegradedAvailability: false
+  nodeDrainPolicy: block-if-contains-last-replica
+  storageMinimalAvailablePercentage: 20
+  storageReservedPercentageForDefaultDisk: 10
+  concurrentReplicaRebuildPerNodeLimit: 2
+  systemManagedComponentsNodeSelector: "node-restriction.kubernetes.io/persistent-storage=true"
+  #taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule"
