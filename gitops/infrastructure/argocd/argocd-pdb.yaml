@@ -1,0 +1,43 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: argocd-repo-server
+  namespace: argocd
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-repo-server
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: argocd-server
+  namespace: argocd
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-server
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: argocd-redis-ha-haproxy
+  namespace: argocd
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-redis-ha-haproxy
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: argocd-redis-ha-server
+  namespace: argocd
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-redis-ha

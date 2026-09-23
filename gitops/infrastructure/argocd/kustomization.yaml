@@ -4,12 +4,31 @@ kind: Kustomization
 namespace: argocd
 
 resources:
-  - argocd-cm.yaml
-  - configmap.yaml
-  - argocd-rbac-cm.yaml
+  - argocd-ha-v3.5.3.yaml
   - argocd-route.yaml
+  - argocd-pdb.yaml
 
 patches:
+  # Custom Argo configuration overlays the official HA ConfigMaps.
+  - path: argocd-cm.yaml
+    target:
+      version: v1
+      kind: ConfigMap
+      name: argocd-cm
+
+  - path: configmap.yaml
+    target:
+      version: v1
+      kind: ConfigMap
+      name: argocd-cmd-params-cm
+
+  - path: argocd-rbac-cm.yaml
+    target:
+      version: v1
+      kind: ConfigMap
+      name: argocd-rbac-cm
+
+  # Place all Argo workloads on the platform-eligible nodes.
   - path: argocd-platform-deployment.patch.yaml
     target:
       group: apps
@@ -24,9 +43,10 @@ patches:
       kind: StatefulSet
       labelSelector: app.kubernetes.io/part-of=argocd
 
-  - path: argocd-redis-ha-server.patch.yaml
+  # Repo-server resource hardening.
+  - path: argocd-repo-server.patch.yaml
     target:
       group: apps
       version: v1
-      kind: StatefulSet
-      name: argocd-redis-ha-server
+      kind: Deployment
+      name: argocd-repo-server
