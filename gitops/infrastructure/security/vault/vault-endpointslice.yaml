@@ -5,6 +5,7 @@ metadata:
   namespace: vault-secrets-operator-system
   labels:
     kubernetes.io/service-name: vault-service
+    endpointslice.kubernetes.io/managed-by: gitops
 addressType: IPv4
 ports:
   - name: https
