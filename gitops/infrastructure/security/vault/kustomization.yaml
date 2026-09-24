@@ -3,3 +3,8 @@ kind: Kustomization
 
 resources:
   - kubernetes-auth-reviewer.yaml
+  - vault-service.yaml
+  - vault-endpointslice.yaml
+  - vault-route.yaml
+  - vault-backend-tls-policy.yaml
+  - argocd

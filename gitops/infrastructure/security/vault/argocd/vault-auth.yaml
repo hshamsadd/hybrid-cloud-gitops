@@ -3,8 +3,11 @@ kind: VaultAuth
 metadata:
   name: gitops-system-vault-auth
   namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-9"
 spec:
   vaultConnectionRef: vault-secrets-operator-system/default
+
   method: kubernetes
   mount: kubernetes
 

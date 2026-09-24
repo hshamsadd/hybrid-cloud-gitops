@@ -1,0 +1,20 @@
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: vault-service
+  namespace: vault-secrets-operator-system
+  labels:
+    kubernetes.io/service-name: vault-service
+addressType: IPv4
+ports:
+  - name: https
+    protocol: TCP
+    appProtocol: https
+    port: 8200
+endpoints:
+  - addresses:
+      - 100.96.242.26
+    conditions:
+      ready: true
+      serving: true
+      terminating: false
