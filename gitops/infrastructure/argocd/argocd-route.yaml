@@ -3,18 +3,26 @@ kind: HTTPRoute
 metadata:
   name: argocd-route
   namespace: argocd
+
 spec:
   parentRefs:
-    - name: local-cluster-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: local-cluster-gateway
       namespace: networking
       sectionName: websecure
+
   hostnames:
     - argocd.home
+
   rules:
     - matches:
         - path:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: argocd-server
+        - group: ""
+          kind: Service
+          name: argocd-server
           port: 80
+          weight: 1
