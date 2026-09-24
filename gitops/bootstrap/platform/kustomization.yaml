@@ -10,4 +10,4 @@ resources:
   - storage.yaml
   - security.yaml
   - argocd.yaml
-  # - vault-secrets-operator.yaml
+  - vault-secrets-operator.yaml
