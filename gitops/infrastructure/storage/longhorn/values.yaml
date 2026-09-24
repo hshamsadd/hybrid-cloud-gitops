@@ -14,6 +14,27 @@ persistence:
 preUpgradeChecker:
   jobEnabled: false
 
+longhornManager:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+
+longhornGlobalManager:
+  replicas: 3
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+
+longhornUI:
+  replicas: 2
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 1
+
 defaultSettings:
   defaultDataPath: /home/longhorn
   createDefaultDiskLabeledNodes: true
