@@ -1,0 +1,54 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rustfs-prod
+  namespace: networking
+spec:
+  parentRefs:
+    - name: local-cluster-gateway
+      namespace: networking
+      sectionName: websecure
+  hostnames: [ "rustfs.home" ]
+  rules:
+    - matches: [ { path: { type: PathPrefix, value: / } } ]
+      backendRefs:
+        - name: rustfs
+          namespace: object-storage
+          port: 9001
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: pgadmin-prod
+  namespace: networking
+  sectionName: websecure
+spec:
+  parentRefs:
+    - name: local-cluster-gateway
+      namespace: networking
+  hostnames: [ "pgadmin.home" ]
+  rules:
+    - matches: [ { path: { type: PathPrefix, value: / } } ]
+      backendRefs:
+        - name: pgadmin
+          namespace: prod-pgadmin
+          port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: wallabag-prod
+  namespace: networking
+  sectionName: websecure
+spec:
+  parentRefs:
+    - name: local-cluster-gateway
+      namespace: networking
+      sectionName: websecure
+  hostnames: [ "wallabag.home" ]
+  rules:
+    - matches: [ { path: { type: PathPrefix, value: / } } ]
+      backendRefs:
+        - name: wallabag
+          namespace: prod-wallabag
+          port: 80

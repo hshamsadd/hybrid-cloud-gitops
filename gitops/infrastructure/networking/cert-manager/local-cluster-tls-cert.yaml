@@ -1,0 +1,74 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-home-wildcard
+  namespace: networking
+spec:
+  secretName: local-home-tls
+
+  dnsNames:
+    - argocd.home
+    - vault.home
+    - traefik.home
+    - rustfs.home
+    - longhorn.home
+    - grafana.home
+    - minio-dev.home
+    - pgadmin-dev.home
+    - wallabag-dev.home
+    - n8n-dev.home
+    - authentik-dev.home
+    - nodered-dev.home
+    - docmost-dev.home
+    - homarr.home
+    - jellyfin.home
+    - seerr.home
+    - radarr.home
+    - sonarr.home
+    - lidarr.home
+    - prowlarr.home
+    - whisparr.home
+    - stash.home
+    - bazarr.home
+    - coolify.home
+    - homepage.home
+    - whoami.home
+    - speedtest.home
+    - webui.home
+    - ollama.home
+    - code.home
+    - tools.home
+    - netboot.home
+    - prometheus.home
+    - uptime.home
+    - scrutiny.home
+    - alert.home
+    - loki.home
+    - logs.home
+    - files.home
+    - sync.home
+    - linkding.home
+    - k3s.home
+    - portainer.home
+    - dockge.home
+    - qbittorrent.home
+    - minio.home
+    - pgadmin.home
+    - wallabag.home
+
+  duration: 2160h
+  renewBefore: 720h
+
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+    rotationPolicy: Always
+
+  usages:
+    - digital signature
+    - server auth
+
+  issuerRef:
+    name: local-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

@@ -1,12 +1,13 @@
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: dockge-route
-  namespace: docker
+  name: dockge
+  namespace: networking
 spec:
   parentRefs:
     - name: local-cluster-gateway
-      namespace: infrastructure
+      namespace: networking
+      sectionName: websecure
   hostnames: [ "dockge.home" ]
   rules:
     - matches: [ { path: { type: PathPrefix, value: / } } ]
@@ -15,12 +16,14 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: portainer-route
-  namespace: docker
+  name: portainer
+  namespace: networking
+  sectionName: websecure
 spec:
   parentRefs:
     - name: local-cluster-gateway
-      namespace: infrastructure
+      namespace: networking
+      sectionName: websecure
   hostnames: [ "portainer.home" ]
   rules:
     - matches: [ { path: { type: PathPrefix, value: / } } ]
@@ -29,12 +32,13 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: qbittorrent-route
-  namespace: docker
+  name: qbittorrent
+  namespace: networking
+  sectionName: websecure
 spec:
   parentRefs:
     - name: local-cluster-gateway
-      namespace: infrastructure
+      namespace: networking
   hostnames: [ "qbittorrent.home" ]
   rules:
     - matches: [ { path: { type: PathPrefix, value: / } } ]

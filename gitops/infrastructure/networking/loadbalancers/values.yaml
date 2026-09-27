@@ -1,0 +1,53 @@
+deployment:
+  replicas: 2
+
+providers:
+  kubernetesGateway:
+    enabled: true
+  kubernetesIngress:
+    enabled: true
+  kubernetesCRD:
+    enabled: true
+    allowExternalNameServices: true
+    allowCrossNamespace: false
+
+gatewayClass:
+  enabled: true
+
+gateway:
+  enabled: true
+
+rbac:
+  enabled: false
+
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    protocol: TCP
+
+  websecure:
+    port: 8443
+    exposedPort: 443
+    protocol: TCP
+
+service:
+  enabled: true
+  type: LoadBalancer
+  annotations:
+    metallb.io/loadBalancerIPs: 192.168.8.240
+  spec:
+    externalTrafficPolicy: Cluster
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+api:
+  dashboard: true
+  insecure: false
+
+ingressRoute:
+  dashboard:
+    enabled: false

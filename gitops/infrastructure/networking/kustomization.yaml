@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - cert-manager
+  - coredns
+  #- endpoints
+  #- endpointslices
+  - gateways
+  - httproutes/home-http-redirect.yaml
+  - ingressroutes
+  - Ipaddresspool
+  - l2advertisement
+  - loadbalancers
+  #- middlewares
+  #- serverstransports
+  #- services
