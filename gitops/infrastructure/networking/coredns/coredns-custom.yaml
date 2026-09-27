@@ -18,7 +18,7 @@ data:
             }
             prometheus :9153
 
-            forward . /etc/resolv.conf {
+            forward . 1.1.1.1 9.9.9.9 {
                 max_concurrent 1000
             }
 
