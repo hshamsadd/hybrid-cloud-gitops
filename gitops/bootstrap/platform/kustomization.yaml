@@ -4,10 +4,12 @@ kind: Kustomization
 resources:
   #- barman-cloud.yaml
   #- cloudnative-pg.yaml
-  #- infrastructure.yaml
   #- logging.yaml
   #- monitoring.yaml
   - storage.yaml
   - security.yaml
   - argocd.yaml
+  - networking.yaml
   - vault-secrets-operator.yaml
+  - tailscale-operator-prereqs.yaml
+  - tailscale-operator.yaml

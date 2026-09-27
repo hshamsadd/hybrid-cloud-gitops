@@ -1,0 +1,50 @@
+installCRDs: true
+
+oauth:
+  clientId: ""
+  clientSecret: ""
+
+operatorConfig:
+  defaultTags:
+    - "tag:k8s-operator"
+
+  image:
+    repository: tailscale/k8s-operator
+    tag: "v1.102.4"
+    pullPolicy: IfNotPresent
+
+  hostname: "hybrid-cloud-k8s-operator"
+  logging: "info"
+
+  nodeSelector:
+    node-restriction.kubernetes.io/always-on: "true"
+    node-restriction.kubernetes.io/platform-eligible: "true"
+
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+proxyConfig:
+  image:
+    repository: tailscale/tailscale
+    tag: "v1.102.4"
+    pullPolicy: IfNotPresent
+
+  defaultTags: "tag:k8s-proxy"
+
+  firewallMode: auto
+
+  defaultProxyClass: ""
+
+apiServerProxyConfig:
+  mode: "false"
+  allowImpersonation: "false"
