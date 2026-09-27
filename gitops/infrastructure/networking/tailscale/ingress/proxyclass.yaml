@@ -1,0 +1,43 @@
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyClass
+metadata:
+  name: tailscale-ingress-ha
+  annotations:
+    argocd.argoproj.io/sync-wave: "-5"
+
+spec:
+  statefulSet:
+    pod:
+      nodeSelector:
+        node-restriction.kubernetes.io/always-on: "true"
+        node-restriction.kubernetes.io/platform-eligible: "true"
+
+      tolerations:
+        - key: "node-role.kubernetes.io/control-plane"
+          operator: "Exists"
+          effect: "NoSchedule"
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              tailscale.com/proxy-role: ingress-ha
+
+      labels:
+        tailscale.com/proxy-role: ingress-ha
+
+      tailscaleContainer:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: "1"
+            memory: 512Mi
+
+  metrics:
+    enable: true
+    serviceMonitor:
+      enable: true

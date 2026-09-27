@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: traefik-ingress-proxies
+  namespace: tailscale
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  minAvailable: 3
+  selector:
+    matchLabels:
+      tailscale.com/proxy-role: ingress-ha
