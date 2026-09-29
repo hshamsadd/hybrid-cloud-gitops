@@ -40,4 +40,4 @@ spec:
   metrics:
     enable: true
     serviceMonitor:
-      enable: true
+      enable: false
