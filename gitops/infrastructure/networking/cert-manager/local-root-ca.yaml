@@ -1,31 +1,31 @@
-# apiVersion: cert-manager.io/v1
-# kind: Certificate
-# metadata:
-#   name: local-root-ca
-#   namespace: networking
-# spec:
-#   isCA: true
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: local-root-ca
+  namespace: networking
+spec:
+  isCA: true
 
-#   secretName: local-root-ca
+  secretName: local-root-ca
 
-#   commonName: "GitOps Local Root CA"
+  commonName: "GitOps Local Root CA"
 
-#   duration: 87600h
+  duration: 87600h
 
-#   renewal:
-#     policy: Disabled
+  renewal:
+    policy: Disabled
 
-#   privateKey:
-#     algorithm: ECDSA
-#     size: 384
-#     rotationPolicy: Never
+  privateKey:
+    algorithm: ECDSA
+    size: 384
+    rotationPolicy: Never
 
-#   usages:
-#     - cert sign
-#     - crl sign
-#     - digital signature
+  usages:
+    - cert sign
+    - crl sign
+    - digital signature
 
-#   issuerRef:
-#     name: local-selfsigned-issuer
-#     kind: ClusterIssuer
-#     group: cert-manager.io
+  issuerRef:
+    name: local-selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

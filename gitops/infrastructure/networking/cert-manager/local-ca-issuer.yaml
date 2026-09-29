@@ -7,10 +7,9 @@ spec:
     secretName: local-root-ca
 ---
 
-
-# apiVersion: cert-manager.io/v1
-# kind: ClusterIssuer
-# metadata:
-#   name: local-selfsigned-issuer
-# spec:
-#   selfSigned: {}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: local-selfsigned-issuer
+spec:
+  selfSigned: {}

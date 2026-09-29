@@ -7,7 +7,7 @@ resources:
   #- endpoints
   #- endpointslices
   - gateways
-  - httproutes/home-http-redirect.yaml
+  - httproutes
   - ingressroutes
   - Ipaddresspool
   - l2advertisement
