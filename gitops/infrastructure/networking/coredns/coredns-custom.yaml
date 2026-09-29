@@ -9,9 +9,9 @@ data:
             errors
             cache 30
 
-            template IN ANY home {
+            template IN A home {
                 match ^[^.]+\.home\.$
-                answer "{{ .Name }} 30 IN CNAME traefik-tailnet.tailfb03f6.ts.net."
+                answer "{{ .Name }} 30 IN A 100.74.199.197"
             }
         }        
         .:53 {
