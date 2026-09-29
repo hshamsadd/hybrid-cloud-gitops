@@ -26,18 +26,34 @@ ports:
     exposedPort: 80
     protocol: TCP
 
+    expose:
+      default: true
+      tailnet: true
+
   websecure:
     port: 8443
     exposedPort: 443
     protocol: TCP
 
+    expose:
+      default: true
+      tailnet: true
+
 service:
   enabled: true
-  type: LoadBalancer
-  annotations:
-    metallb.io/loadBalancerIPs: 192.168.8.240
-  spec:
-    externalTrafficPolicy: Cluster
+  type: ClusterIP #LoadBalancer
+  annotations: {} #metallb.io/loadBalancerIPs: 192.168.8.240
+  spec: {} #externalTrafficPolicy: Cluster
+
+  additionalServices:
+    tailnet:
+      annotations:
+        tailscale.com/proxy-group: traefik-ingress
+        tailscale.com/hostname: traefik-tailnet
+
+      spec:
+        type: LoadBalancer
+        loadBalancerClass: tailscale
 
 tolerations:
   - key: node-role.kubernetes.io/control-plane
