@@ -12,9 +12,6 @@ spec:
 
   duration: 87600h
 
-  # renewal:
-  #   policy: Disabled
-
   privateKey:
     algorithm: ECDSA
     size: 384

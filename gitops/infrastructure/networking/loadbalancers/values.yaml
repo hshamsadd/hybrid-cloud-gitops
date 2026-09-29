@@ -48,9 +48,9 @@ ports:
 
 service:
   enabled: true
-  type: ClusterIP
   annotations: {}
-  spec: {}
+  spec:
+    type: ClusterIP
 
   additionalServices:
     tailnet:
