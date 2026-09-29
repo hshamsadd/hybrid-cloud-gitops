@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: home-dns-proxies
+  namespace: tailscale
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      tailscale.com/proxy-role: home-dns-ha

@@ -1,0 +1,13 @@
+apiVersion: tailscale.com/v1alpha1
+kind: ProxyGroup
+metadata:
+  name: home-dns
+  namespace: tailscale
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  type: ingress
+  replicas: 4
+  proxyClass: home-dns-ha
+  tags:
+    - "tag:k8s-proxy"
