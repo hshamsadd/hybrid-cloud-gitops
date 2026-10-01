@@ -1,6 +1,6 @@
 global:
   nodeSelector:
-    node-restriction.kubernetes.io/persistent-storage: "true"
+    node-restriction.kubernetes.io/longhorn-eligible: "true"
 
   tolerations:
     - key: node-role.kubernetes.io/control-plane
@@ -13,6 +13,10 @@ persistence:
 
 preUpgradeChecker:
   jobEnabled: false
+
+longhornDriver:
+  nodeSelector:
+    node-restriction.kubernetes.io/persistent-storage: "true"
 
 longhornManager:
   resources:
@@ -34,6 +38,8 @@ longhornUI:
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
+    nodeSelector:
+    node-restriction.kubernetes.io/persistent-storage: "true"
 
 defaultSettings:
   defaultDataPath: /home/longhorn
@@ -45,5 +51,5 @@ defaultSettings:
   storageMinimalAvailablePercentage: 20
   storageReservedPercentageForDefaultDisk: 10
   concurrentReplicaRebuildPerNodeLimit: 2
-  systemManagedComponentsNodeSelector: "node-restriction.kubernetes.io/persistent-storage:true"
+  systemManagedComponentsNodeSelector: "node-restriction.kubernetes.io/longhorn-eligible:true"
   taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule"
