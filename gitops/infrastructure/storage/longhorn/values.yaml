@@ -45,5 +45,5 @@ defaultSettings:
   storageMinimalAvailablePercentage: 20
   storageReservedPercentageForDefaultDisk: 10
   concurrentReplicaRebuildPerNodeLimit: 2
-  systemManagedComponentsNodeSelector: "node-restriction.kubernetes.io/persistent-storage=true"
-  #taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule"
+  systemManagedComponentsNodeSelector: "node-restriction.kubernetes.io/persistent-storage:true"
+  taintToleration: "node-role.kubernetes.io/control-plane:NoSchedule"
