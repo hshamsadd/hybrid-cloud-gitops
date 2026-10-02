@@ -1,7 +1,6 @@
 global:
   nodeSelector:
     node-restriction.kubernetes.io/longhorn-eligible: "true"
-
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
@@ -35,11 +34,22 @@ longhornGlobalManager:
 
 longhornUI:
   replicas: 2
+  nodeSelector:
+    node-restriction.kubernetes.io/persistent-storage: "true"
   podDisruptionBudget:
     enabled: true
     minAvailable: 1
-    nodeSelector:
-    node-restriction.kubernetes.io/persistent-storage: "true"
+
+httproute:
+  enabled: true
+  parentRefs:
+    - name: local-cluster-gateway
+      namespace: networking
+      sectionName: websecure
+  hostnames:
+    - longhorn.home
+  path: /
+  pathType: PathPrefix
 
 defaultSettings:
   defaultDataPath: /home/longhorn
