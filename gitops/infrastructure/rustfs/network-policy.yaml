@@ -1,0 +1,79 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rustfs
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rustfs
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+
+    # Traefik Gateway -> RustFS Console
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: networking
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+              app.kubernetes.io/instance: traefik-networking
+      ports:
+        - protocol: TCP
+          port: 9001
+
+    # CNPG/Barman -> S3
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: prod-database
+      ports:
+        - protocol: TCP
+          port: 9000
+
+    # RustFS members -> RustFS members
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rustfs
+      ports:
+        - protocol: TCP
+          port: 9000
+
+    # RustFS bucket bootstrap Job -> S3         
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rustfs-postgres-backup-bucket
+      ports:
+        - protocol: TCP
+          port: 9000
+
+  egress:
+
+    # Kubernetes DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # RustFS internode traffic
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rustfs
+      ports:
+        - protocol: TCP
+          port: 9000

@@ -1,0 +1,183 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rustfs
+  labels:
+    app.kubernetes.io/name: rustfs
+    app.kubernetes.io/component: object-storage
+spec:
+  serviceName: rustfs-headless
+  replicas: 4
+  podManagementPolicy: Parallel
+  updateStrategy:
+    type: RollingUpdate
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rustfs
+
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rustfs
+        app.kubernetes.io/component: object-storage
+
+    spec:
+      terminationGracePeriodSeconds: 120
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: rustfs
+              topologyKey: kubernetes.io/hostname
+
+      nodeSelector:
+        rustfs: "true"
+        node-restriction.kubernetes.io/persistent-storage: "true"
+        node-restriction.kubernetes.io/always-on: "true"
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+
+        - key: workload-type
+          operator: Equal
+          value: database
+          effect: NoSchedule
+
+      containers:
+        - name: rustfs
+          image: rustfs/rustfs:1.0.0
+          imagePullPolicy: IfNotPresent
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+
+          env:
+            - name: RUSTFS_VOLUMES
+              value: "http://rustfs-{0...3}.rustfs-headless.object-storage.svc.cluster.local:9000/data"
+
+            - name: RUSTFS_ERASURE_SET_DRIVE_COUNT
+              value: "4"
+
+            - name: RUSTFS_STORAGE_CLASS_STANDARD
+              value: "EC:2"
+
+            - name: RUSTFS_STORAGE_CLASS_RRS
+              value: "EC:2"
+
+            - name: RUSTFS_ADDRESS
+              value: ":9000"
+
+            - name: RUSTFS_CONSOLE_ENABLE
+              value: "true"
+
+            - name: RUSTFS_CONSOLE_ADDRESS
+              value: ":9001"
+
+            - name: RUSTFS_CONSOLE_CORS_ALLOWED_ORIGINS
+              value: "https://rustfs.home"
+
+            - name: RUSTFS_OBS_LOGGER_LEVEL
+              value: "info"
+
+            - name: RUSTFS_ACCESS_KEY_FILE
+              value: /run/secrets/rustfs/access-key
+
+            - name: RUSTFS_SECRET_KEY_FILE
+              value: /run/secrets/rustfs/secret-key
+
+            - name: RUSTFS_RPC_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: rustfs-admin-credentials
+                  key: RPC_SECRET
+
+          ports:
+            - name: s3
+              containerPort: 9000
+              protocol: TCP
+
+            - name: console
+              containerPort: 9001
+              protocol: TCP
+
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: s3
+              scheme: HTTP
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+
+          readinessProbe:
+            httpGet:
+              path: /health/ready
+              port: s3
+              scheme: HTTP
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: s3
+              scheme: HTTP
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+
+          volumeMounts:
+            - name: data
+              mountPath: /data
+
+            - name: rustfs-credentials
+              mountPath: /run/secrets/rustfs
+              readOnly: true
+
+      volumes:
+        - name: rustfs-credentials
+          secret:
+            secretName: rustfs-admin-credentials
+            items:
+              - key: ACCESS_KEY_ID
+                path: access-key
+              - key: SECRET_ACCESS_KEY
+                path: secret-key
+
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: longhorn-rustfs
+        resources:
+          requests:
+            storage: 20Gi #instead of 50
