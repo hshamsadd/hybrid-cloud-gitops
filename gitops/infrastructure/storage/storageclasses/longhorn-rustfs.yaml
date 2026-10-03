@@ -14,6 +14,6 @@ parameters:
   numberOfReplicas: "1"
   staleReplicaTimeout: "30"
   fromBackup: ""
-  fsType: ext4
-  dataLocality: best-effort
-  replicaAutoBalance: least-effort
+  fsType: xfs #ext4
+  dataLocality: strict-local #best-effort
+  replicaAutoBalance: disabled #least-effort
