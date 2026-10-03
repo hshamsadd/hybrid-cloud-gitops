@@ -25,8 +25,8 @@ spec:
           type: RuntimeDefault
 
       containers:
-        - name: mc
-          image: minio/mc:RELEASE.2025-08-13T08-35-41Z
+        - name: rc
+          image: rustfs/rc:v0.1.36
           imagePullPolicy: IfNotPresent
 
           securityContext:
@@ -48,9 +48,6 @@ spec:
             - name: HOME
               value: /tmp
 
-            - name: MC_CONFIG_DIR
-              value: /tmp/.mc
-
             - name: RUSTFS_ACCESS_KEY
               valueFrom:
                 secretKeyRef:
@@ -69,13 +66,14 @@ spec:
 
           args:
             - |
-              mc alias set rustfs \
+              rc alias set rustfs \
                 http://rustfs.object-storage.svc.cluster.local:9000 \
                 "$RUSTFS_ACCESS_KEY" \
                 "$RUSTFS_SECRET_KEY" \
-                --api S3v4
 
-              mc mb --ignore-existing rustfs/postgres-backups
+              rc bucket create \
+                --ignore-existing \
+                rustfs/postgres-backups  
 
           volumeMounts:
             - name: tmp
