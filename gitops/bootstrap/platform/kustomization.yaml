@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   #- barman-cloud.yaml
-  #- cloudnative-pg.yaml
+  - cloudnative-pg.yaml
   #- logging.yaml
   #- monitoring.yaml
   - storage.yaml
