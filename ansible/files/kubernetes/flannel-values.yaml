@@ -1,0 +1,8 @@
+flannel:
+  args:
+    - --ip-masq
+    - --kube-subnet-mgr
+    - --iface=tailscale0
+netpol:
+  enabled: true
+podCidr: 10.244.0.0/16

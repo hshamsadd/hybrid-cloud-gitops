@@ -3,3 +3,4 @@ kind: Kustomization
 
 resources:
   - application.yaml
+  - network-policy-v1-iscsi.yaml
