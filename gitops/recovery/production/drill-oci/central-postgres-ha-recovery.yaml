@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: central-postgres-ha
+  name: central-postgres-ha-recovery
   namespace: prod-database
 
 spec:

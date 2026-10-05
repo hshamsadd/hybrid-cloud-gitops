@@ -1,12 +1,15 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: central-postgres-ha-recovery
-  namespace: production
+  name: central-postgres-ha
+  namespace: prod-database
+
 spec:
   instances: 1
 
   imageName: ghcr.io/cloudnative-pg/postgresql:17-standard-trixie
+
+  enablePDB: false
 
   resources:
     requests:
@@ -18,25 +21,35 @@ spec:
 
   storage:
     size: 15Gi
-    storageClass: local-path
+    storageClass: longhorn-ha
 
   affinity:
     enablePodAntiAffinity: false
+
     nodeSelector:
       cnpg-ha: "true"
+      kubernetes.io/arch: amd64
+      node-restriction.kubernetes.io/persistent-storage: "true"
+      node-restriction.kubernetes.io/always-on: "true"
+
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
 
   bootstrap:
     recovery:
       database: wallabag
       owner: wallabag_user
       secret:
-        name: cnpg-wallabag-credentials-vault
+        name: cnpg-wallabag-role-credentials-vault
       source: central-postgres-ha-backup
 
   externalClusters:
     - name: central-postgres-ha-backup
       plugin:
+        enabled: true
         name: barman-cloud.cloudnative-pg.io
         parameters:
-          barmanObjectName: minio-postgres-backups
-          serverName: production
+          barmanObjectName: rustfs-postgres-backups-secondary
+          serverName: central-postgres-ha

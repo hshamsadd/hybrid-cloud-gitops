@@ -7,15 +7,24 @@ It is intentionally outside the active production Argo CD Kustomization.
 Never add these recovery Kustomizations to `stack-production`.
 
 ## Current production identity
-
-- Namespace: `production`
+<!-- - Namespace: `production`
 - Cluster: `central-postgres-ha`
 - Database: `wallabag`
 - Owner and login role: `wallabag_user`
 - ObjectStore: `minio-postgres-backups`
 - Current Barman source identity: `central-postgres-ha`
 - StorageClass: `local-path`
-- Eligible nodes: `cnpg-ha=true`, currently `server` and `worker-2`
+- Eligible nodes: `cnpg-ha=true`, currently `server` and `worker-2` -->
+
+Cluster prerequisites must be restored before applying greenfield/
+Namespace prod-database
+CloudNativePG operator
+Barman plugin
+ObjectStore oci-postgres-backups
+Vault Secrets Operator
+prod-database-vault-auth
+oci-postgres-dr-credentials-vault
+cnpg-wallabag-role-credentials-vault
 
 The active manifest under
 `gitops/apps/environments/production/patches/cloudnative-pg/`

@@ -1,0 +1,151 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backups-oci-to-rustfs
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+
+spec:
+  schedule: "*/15 * * * *"
+  timeZone: "Etc/UTC"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 10800
+      backoffLimit: 3
+      ttlSecondsAfterFinished: 86400
+
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: postgres-backups-oci-to-rustfs
+
+        spec:
+          restartPolicy: OnFailure
+
+          nodeSelector:
+            kubernetes.io/arch: amd64
+            node-restriction.kubernetes.io/always-on: "true"
+
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              operator: Exists
+              effect: NoSchedule
+
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+
+          containers:
+            - name: replicate
+              image: rclone/rclone:1.75.1
+              imagePullPolicy: IfNotPresent
+
+              securityContext:
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop:
+                    - ALL
+                readOnlyRootFilesystem: true
+
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+
+              env:
+                - name: HOME
+                  value: /tmp
+
+                - name: RCLONE_CONFIG_OCI_TYPE
+                  value: s3
+                - name: RCLONE_CONFIG_OCI_PROVIDER
+                  value: Other
+                - name: RCLONE_CONFIG_OCI_FORCE_PATH_STYLE
+                  value: "true"
+
+                - name: RCLONE_CONFIG_OCI_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: oci-postgres-dr-credentials-vault
+                      key: ACCESS_KEY_ID
+
+                - name: RCLONE_CONFIG_OCI_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: oci-postgres-dr-credentials-vault
+                      key: SECRET_ACCESS_KEY
+
+                - name: RCLONE_CONFIG_OCI_REGION
+                  valueFrom:
+                    secretKeyRef:
+                      name: oci-postgres-dr-credentials-vault
+                      key: AWS_REGION
+
+                - name: RCLONE_CONFIG_OCI_ENDPOINT
+                  valueFrom:
+                    secretKeyRef:
+                      name: oci-postgres-dr-credentials-vault
+                      key: S3_ENDPOINT
+
+                - name: RCLONE_CONFIG_RUSTFS_TYPE
+                  value: s3
+                - name: RCLONE_CONFIG_RUSTFS_PROVIDER
+                  value: Other
+                - name: RCLONE_CONFIG_RUSTFS_REGION
+                  value: us-east-1
+                - name: RCLONE_CONFIG_RUSTFS_ENDPOINT
+                  value: http://rustfs.object-storage.svc.cluster.local:9000
+                - name: RCLONE_CONFIG_RUSTFS_FORCE_PATH_STYLE
+                  value: "true"
+
+                - name: RCLONE_CONFIG_RUSTFS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: rustfs-postgres-secondary-credentials-vault
+                      key: ACCESS_KEY_ID
+
+                - name: RCLONE_CONFIG_RUSTFS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: rustfs-postgres-secondary-credentials-vault
+                      key: SECRET_ACCESS_KEY
+
+              command:
+                - /bin/sh
+                - -ec
+
+              args:
+                - |
+                  rclone copy \
+                    oci:postgres-backups-dr/central-postgres-ha \
+                    rustfs:postgres-backups-dr-secondary/central-postgres-ha \
+                    --size-only \
+                    --transfers 4 \
+                    --checkers 8 \
+                    --retries 3 \
+                    --low-level-retries 10 \
+                    --stats 30s
+
+                  rclone check \
+                    oci:postgres-backups-dr/central-postgres-ha \
+                    rustfs:postgres-backups-dr-secondary/central-postgres-ha \
+                    --one-way \
+                    --size-only
+
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+
+          volumes:
+            - name: tmp
+              emptyDir: {}

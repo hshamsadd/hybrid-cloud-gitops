@@ -1,7 +1,7 @@
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
-  name: central-postgres-ha
+  name: central-postgres-ha-recovery-rustfs
   namespace: prod-database
 
 spec:
@@ -51,5 +51,5 @@ spec:
         enabled: true
         name: barman-cloud.cloudnative-pg.io
         parameters:
-          barmanObjectName: oci-postgres-backups
+          barmanObjectName: rustfs-postgres-backups-secondary
           serverName: central-postgres-ha
