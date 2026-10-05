@@ -1,0 +1,9 @@
+# apiVersion: policy/v1
+# kind: PodDisruptionBudget
+# metadata:
+#   name: central-postgres-ha
+# spec:
+#   minAvailable: 2
+#   selector:
+#     matchLabels:
+#       cnpg.io/cluster: central-postgres-ha

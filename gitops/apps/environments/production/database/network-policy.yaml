@@ -1,0 +1,106 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: central-postgres-ha
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  podSelector:
+    matchLabels:
+      cnpg.io/cluster: central-postgres-ha
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    # CNPG operator -> instance manager / PostgreSQL
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cnpg-system
+      ports:
+        - protocol: TCP
+          port: 8000
+        - protocol: TCP
+          port: 5432
+
+    # CNPG members:
+    - from:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: central-postgres-ha
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 8000
+
+    # Wallabag -> PostgreSQL
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: prod-wallabag
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # pgAdmin -> PostgreSQL
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: prod-pgadmin
+      ports:
+        - protocol: TCP
+          port: 5432
+
+    # Prometheus -> CNPG instance metrics
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9187
+
+  egress:
+    # CNPG member -> member:
+    - to:
+        - podSelector:
+            matchLabels:
+              cnpg.io/cluster: central-postgres-ha
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 8000
+
+    # CoreDNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # OCI HTTPS + Kubernetes API service
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 443
+
+    # Kubernetes API endpoint backends
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+      ports:
+        - protocol: TCP
+          port: 6443

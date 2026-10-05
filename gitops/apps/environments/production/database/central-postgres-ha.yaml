@@ -1,0 +1,118 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: central-postgres-ha
+  labels:
+    apps.home.lab/environment: production
+    apps.home.lab/workload: database
+
+spec:
+  instances: 3
+  primaryUpdateStrategy: supervised
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:17-standard-trixie
+  imagePullPolicy: IfNotPresent
+
+  inheritedMetadata:
+    labels:
+      apps.home.lab/environment: production
+      apps.home.lab/workload: database
+
+  enableSuperuserAccess: false
+
+  seccompProfile:
+    type: RuntimeDefault
+
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1"
+
+  storage:
+    size: 15Gi
+    storageClass: longhorn-ha
+
+  affinity:
+    enablePodAntiAffinity: true
+    topologyKey: kubernetes.io/hostname
+    podAntiAffinityType: required
+
+    nodeSelector:
+      cnpg-ha: "true"
+      kubernetes.io/arch: amd64
+      node-restriction.kubernetes.io/persistent-storage: "true"
+      node-restriction.kubernetes.io/always-on: "true"
+
+    tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+
+  postgresql:
+    parameters:
+      password_encryption: scram-sha-256
+      synchronous_commit: "on"
+      fsync: "on"
+      full_page_writes: "on"
+
+    synchronous:
+      method: any
+      number: 1
+      dataDurability: required
+      failoverQuorum: true
+
+  probes:
+    liveness:
+      isolationCheck:
+        enabled: true
+        requestTimeout: 2000
+        connectionTimeout: 2000
+
+  replicationSlots:
+    highAvailability:
+      enabled: true
+    updateInterval: 30
+
+  enablePDB: true
+
+  # primaryLease:
+  #   leaseDurationSeconds: 15
+  #   renewDeadlineSeconds: 10
+  #   retryPeriodSeconds: 2
+  #   releasedLeaseDurationSeconds: 1
+
+  bootstrap:
+    initdb:
+      database: initial_db
+      owner: initial_user
+      secret:
+        name: cnpg-bootstrap-credentials-vault
+
+  backup:
+    target: prefer-standby
+
+  # bootstrap:
+  #   recovery:
+  #     database: initial_db
+  #     owner: initial_user
+  #     secret:
+  #       name: cnpg-bootstrap-credentials-vault
+  #     source: central-postgres-ha-backup
+
+  # externalClusters:
+  #   - name: central-postgres-ha-backup
+  #     plugin:
+  #       name: barman-cloud.cloudnative-pg.io
+  #       parameters:
+  #         barmanObjectName: oci-postgres-backups
+  #         serverName: central-postgres-ha
+
+  plugins:
+    - name: barman-cloud.cloudnative-pg.io
+      isWALArchiver: true
+      parameters:
+        barmanObjectName: oci-postgres-backups
+        serverName: central-postgres-ha

@@ -1,0 +1,57 @@
+apiVersion: barmancloud.cnpg.io/v1
+kind: ObjectStore
+metadata:
+  name: oci-postgres-backups
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+
+spec:
+  configuration:
+    destinationPath: s3://postgres-backups-dr/
+
+    endpointURL: https://axc00uy8zwuh.compat.objectstorage.eu-amsterdam-1.oci.customer-oci.com
+
+    s3Credentials:
+      accessKeyId:
+        name: oci-postgres-dr-credentials-vault
+        key: ACCESS_KEY_ID
+
+      secretAccessKey:
+        name: oci-postgres-dr-credentials-vault
+        key: SECRET_ACCESS_KEY
+
+      region:
+        name: oci-postgres-dr-credentials-vault
+        key: AWS_REGION
+
+    wal:
+      compression: gzip
+      maxParallel: 8
+      archiveAdditionalCommandArgs:
+        - "--addressing-style=path"
+      restoreAdditionalCommandArgs:
+        - "--addressing-style=path"
+
+    data:
+      compression: gzip
+      additionalCommandArgs:
+        - "--addressing-style=path"
+      restoreAdditionalCommandArgs:
+        - "--addressing-style=path"
+
+  instanceSidecarConfiguration:
+    env:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: when_required
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: when_required
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  retentionPolicy: "30d"

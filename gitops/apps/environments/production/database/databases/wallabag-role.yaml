@@ -1,0 +1,27 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: wallabag-user
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+
+spec:
+  cluster:
+    name: central-postgres-ha
+
+  name: wallabag_user
+  comment: "Low-privilege PostgreSQL login for the Wallabag application"
+
+  login: true
+  superuser: false
+  createdb: false
+  createrole: false
+  replication: false
+  bypassrls: false
+  inherit: true
+  connectionLimit: 50
+
+  databaseRoleReclaimPolicy: retain
+
+  passwordSecret:
+    name: cnpg-wallabag-role-credentials-vault

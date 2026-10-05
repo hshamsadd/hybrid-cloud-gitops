@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: prod-database
+
+resources:
+  - databases
+  - barman-objectstore.yaml
+  - central-postgres-ha.yaml
+  - network-policy.yaml
+  #- oci-postgres-dr-mirror-cronjob.yaml
+  - scheduled-backup-ha.yaml
+  - vault-auth.yaml
+  - vault-serviceaccount.yaml
+  - vault-static-secret-cnpg-bootstrap.yaml
+  #- vault-static-secret-cnpg-rustfs-backup.yaml
+  - vault-static-secret-cnpg-wallabag-role.yaml
+  - vault-static-secret-oci-postgres-dr.yaml

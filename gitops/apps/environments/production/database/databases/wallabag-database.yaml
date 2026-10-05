@@ -1,0 +1,16 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: wallabag
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+
+spec:
+  cluster:
+    name: central-postgres-ha
+
+  name: wallabag
+  owner: wallabag_user
+  allowConnections: true
+  connectionLimit: 100
+  databaseReclaimPolicy: retain
