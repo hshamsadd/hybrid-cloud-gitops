@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: prod-database-limits
+  namespace: prod-database
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "1"
+        memory: 1Gi
+      defaultRequest:
+        cpu: 100m
+        memory: 256Mi
+
+# ---
+# apiVersion: v1
+# kind: LimitRange
+# metadata:
+#   name: prod-cache-limitrange
+#   namespace: prod-cache
+# spec:
+#   limits:
+#     - type: Container
+#       default:
+#         cpu: 500m
+#         memory: 512Mi
+#       defaultRequest:
+#         cpu: 50m
+#         memory: 64Mi
+# ---
+# apiVersion: v1
+# kind: LimitRange
+# metadata:
+#   name: prod-pgadmin-limitrange
+#   namespace: prod-pgadmin
+# spec:
+#   limits:
+#     - type: Container
+#       default:
+#         cpu: 500m
+#         memory: 512Mi
+#       defaultRequest:
+#         cpu: 100m
+#         memory: 128Mi
+# ---
+# apiVersion: v1
+# kind: LimitRange
+# metadata:
+#   name: prod-wallabag-limitrange
+#   namespace: prod-wallabag
+# spec:
+#   limits:
+#     - type: Container
+#       default:
+#         cpu: 1
+#         memory: 1Gi
+#       defaultRequest:
+#         cpu: 100m
+#         memory: 256Mi
