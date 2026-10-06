@@ -127,8 +127,8 @@ spec:
               args:
                 - |
                   rclone copy \
-                    oci:postgres-backups-dr/central-postgres-ha \
-                    rustfs:postgres-backups-dr-secondary/central-postgres-ha \
+                    oci:postgres-backups-dr/central-postgres-ha/ \
+                    rustfs:postgres-backups-dr-secondary/central-postgres-ha/ \
                     --size-only \
                     --transfers 4 \
                     --checkers 8 \
@@ -137,8 +137,8 @@ spec:
                     --stats 30s
 
                   rclone check \
-                    oci:postgres-backups-dr/central-postgres-ha \
-                    rustfs:postgres-backups-dr-secondary/central-postgres-ha \
+                    oci:postgres-backups-dr/central-postgres-ha/ \
+                    rustfs:postgres-backups-dr-secondary/central-postgres-ha/ \
                     --one-way \
                     --size-only
 
