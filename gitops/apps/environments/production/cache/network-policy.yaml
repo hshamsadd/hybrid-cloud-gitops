@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: redis
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+
+spec:
+  podSelector:
+    matchLabels:
+      app: redis
+
+  policyTypes:
+    - Ingress
+    - Egress
+
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              apps.home.lab/environment: production
+              apps.home.lab/workload: wallabag
+
+      ports:
+        - protocol: TCP
+          port: 6379
+
+  # Redis does not require DNS, Internet, Kubernetes API,
+  # PostgreSQL, Vault, or other outbound connections.
+  egress: []

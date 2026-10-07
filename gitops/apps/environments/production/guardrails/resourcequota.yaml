@@ -3,31 +3,39 @@ kind: ResourceQuota
 metadata:
   name: prod-database-compute
   namespace: prod-database
+
 spec:
   hard:
     requests.cpu: "6"
     requests.memory: 12Gi
+
     limits.cpu: "12"
     limits.memory: 24Gi
+
     pods: "25"
+
     persistentvolumeclaims: "10"
     requests.storage: 100Gi
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: prod-cache-compute
+  namespace: prod-cache
 
-# ---
-# apiVersion: v1
-# kind: ResourceQuota
-# metadata:
-#   name: prod-cache-compute
-#   namespace: prod-cache
-# spec:
-#   hard:
-#     requests.cpu: "2"
-#     requests.memory: 4Gi
-#     limits.cpu: "4"
-#     limits.memory: 8Gi
-#     pods: "10"
-#     persistentvolumeclaims: "3"
-#     requests.storage: 20Gi
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 2Gi
+
+    limits.cpu: "2"
+    limits.memory: 4Gi
+
+    pods: "6"
+
+    persistentvolumeclaims: "2"
+    requests.storage: 10Gi
+
 # ---
 # apiVersion: v1
 # kind: ResourceQuota

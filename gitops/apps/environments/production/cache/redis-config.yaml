@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+
+data:
+  redis.conf: |
+    # Network
+    bind 0.0.0.0
+    protected-mode yes
+    port 6379
+
+    tcp-keepalive 60
+    timeout 0
+
+    # Authentication and authorization.
+    aclfile /run/secrets/redis/users.acl
+
+    # Persistent storage.
+    dir /data
+
+    # AOF is the persistence mechanism for this Redis instance.
+    appendonly yes
+    appendfsync everysec
+    aof-use-rdb-preamble yes
+
+    # Do not create periodic RDB snapshots.
+    save ""
+
+    # This Redis instance can carry Wallabag asynchronous work.
+    # Never silently evict queue/work data under memory pressure.
+    maxmemory 384mb
+    maxmemory-policy noeviction
+
+    # Logging.
+    loglevel notice

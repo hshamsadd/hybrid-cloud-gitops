@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: prod-cache
+
+resources:
+  - ../../../base/redis
+  - network-policy.yaml
+  - pvc.yaml
+  - redis-config.yaml
+  - vault-auth.yaml
+  - vault-serviceaccount.yaml
+  - vault-static-secret-redis.yaml
+
+patches:
+  - path: redis-resources.yaml
+
+images:
+  - name: redis
+    newName: redis
+    newTag: 7.4.11-alpine3.21

@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prod-cache
+  namespace: argocd
+
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+
+spec:
+  project: default
+
+  source:
+    repoURL: https://github.com/hshamsadd/hybrid-cloud-gitops.git
+    targetRevision: main
+    path: gitops/apps/environments/production/cache
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prod-cache
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+    syncOptions:
+      - ServerSideApply=true
