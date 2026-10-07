@@ -14,11 +14,9 @@ spec:
       labels:
         app: redis
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: worker-1
       containers:
         - name: redis
           image: redis:7-alpine
           ports:
             - containerPort: 6379
-          command: ["redis-server", "--appendonly", "yes"]
+          command: [ "redis-server", "--appendonly", "yes" ]
