@@ -6,6 +6,6 @@ resources:
   - guardrails.yaml
   - database.yaml
   - prod-database-dr.yaml
-  #- cache.yaml
+  - cache.yaml
   #- pgadmin.yaml
   #- wallabag.yaml
