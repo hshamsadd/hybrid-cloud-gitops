@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: redis-data
   annotations:
-    argocd.argoproj.io/sync-wave: "-2"
+    argocd.argoproj.io/sync-wave: "0"
 
   labels:
     apps.home.lab/environment: production
