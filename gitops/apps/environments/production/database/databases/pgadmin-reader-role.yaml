@@ -1,0 +1,31 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: pgadmin-reader
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+
+spec:
+  cluster:
+    name: central-postgres-ha
+
+  name: pgadmin_reader
+  comment: "Read-oriented pgAdmin access for production inspection"
+
+  login: true
+  superuser: false
+  createdb: false
+  createrole: false
+  replication: false
+  bypassrls: false
+  inherit: true
+  connectionLimit: 5
+
+  inRoles:
+    - pg_monitor
+    - pg_read_all_data
+
+  databaseRoleReclaimPolicy: retain
+
+  passwordSecret:
+    name: cnpg-pgadmin-reader-credentials-vault
