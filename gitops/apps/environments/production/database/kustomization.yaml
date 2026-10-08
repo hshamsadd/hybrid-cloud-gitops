@@ -14,3 +14,4 @@ resources:
   - vault-static-secret-cnpg-wallabag-role.yaml
   - vault-static-secret-oci-postgres-dr.yaml
   - vault-static-secret-pgadmin-reader.yaml
+  - vault-static-secret-pgadmin-admin.yaml

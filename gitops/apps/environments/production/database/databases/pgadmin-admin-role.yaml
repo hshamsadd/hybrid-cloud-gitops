@@ -1,0 +1,24 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: pgadmin-admin
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+
+spec:
+  cluster:
+    name: central-postgres-ha
+
+  name: pgadmin_admin
+  comment: "Full PostgreSQL administrator for production maintenance"
+
+  login: true
+  superuser: true
+  createdb: true
+  createrole: true
+  connectionLimit: 5
+
+  databaseRoleReclaimPolicy: retain
+
+  passwordSecret:
+    name: cnpg-pgadmin-admin-credentials-vault

@@ -5,3 +5,4 @@ resources:
   - wallabag-role.yaml
   - wallabag-database.yaml
   - pgadmin-reader-role.yaml
+  - pgadmin-admin-role.yaml
