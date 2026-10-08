@@ -78,12 +78,6 @@ spec:
 
   enablePDB: true
 
-  # primaryLease:
-  #   leaseDurationSeconds: 15
-  #   renewDeadlineSeconds: 10
-  #   retryPeriodSeconds: 2
-  #   releasedLeaseDurationSeconds: 1
-
   bootstrap:
     initdb:
       database: initial_db
@@ -93,22 +87,6 @@ spec:
 
   backup:
     target: prefer-standby
-
-  # bootstrap:
-  #   recovery:
-  #     database: initial_db
-  #     owner: initial_user
-  #     secret:
-  #       name: cnpg-bootstrap-credentials-vault
-  #     source: central-postgres-ha-backup
-
-  # externalClusters:
-  #   - name: central-postgres-ha-backup
-  #     plugin:
-  #       name: barman-cloud.cloudnative-pg.io
-  #       parameters:
-  #         barmanObjectName: oci-postgres-backups
-  #         serverName: central-postgres-ha
 
   plugins:
     - name: barman-cloud.cloudnative-pg.io
