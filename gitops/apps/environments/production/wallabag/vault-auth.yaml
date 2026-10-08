@@ -1,0 +1,15 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: wallabag-vault-auth
+spec:
+  method: kubernetes
+  mount: kubernetes-kubeadm
+  vaultConnectionRef: vault-secrets-operator-system/default
+
+  kubernetes:
+    role: kubernetes-prod-wallabag
+    serviceAccount: wallabag-vault
+    audiences:
+      - vault
+    tokenExpirationSeconds: 600

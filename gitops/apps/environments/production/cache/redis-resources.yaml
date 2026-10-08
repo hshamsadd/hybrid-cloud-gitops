@@ -67,8 +67,6 @@ spec:
             - weight: 100
               preference:
                 matchExpressions:
-                  # Prefer worker-01/amd64 while retaining worker-02/arm64
-                  # as a valid failover target.
                   - key: node-restriction.kubernetes.io/cache-primary
                     operator: In
                     values:
@@ -167,12 +165,12 @@ spec:
         - name: redis-config
           configMap:
             name: redis-config
-            defaultMode: 444
+            defaultMode: 292
 
         - name: redis-credentials
           secret:
             secretName: redis-credentials-vault
-            defaultMode: 440
+            defaultMode: 288
 
         - name: redis-data
           persistentVolumeClaim:

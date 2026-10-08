@@ -1,0 +1,20 @@
+# apiVersion: kustomize.config.k8s.io/v1beta1
+# kind: Kustomization
+# namespace: prod-wallabag
+
+# resources:
+#   - ../../../base/wallabag
+#   - vault-serviceaccount.yaml
+#   - vault-auth.yaml
+#   - vault-static-secret-wallabag.yaml
+#   - pvc.yaml
+#   - wallabag-images.yaml
+#   #- pdb.yaml
+#   - network-policy.yaml
+#   - cilium-network-policy.yaml
+#   - reference-grant.yaml
+
+# patches:
+#   - path: wallabag-env.yaml
+#   - path: wallabag-vault-secret.yaml
+#   - path: wallabag-resources.yaml
