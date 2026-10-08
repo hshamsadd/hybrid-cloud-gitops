@@ -4,49 +4,75 @@ metadata:
   name: wallabag
   labels:
     app: wallabag
+
 spec:
   replicas: 1
+
   selector:
     matchLabels:
       app: wallabag
+
   template:
     metadata:
       labels:
         app: wallabag
+
     spec:
-      nodeSelector:
-        kubernetes.io/hostname: worker-1
       containers:
         - name: wallabag
-          image: wallabag/wallabag:latest
+          image: wallabag/wallabag:2.6.14
+          imagePullPolicy: IfNotPresent
+
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 80
+              protocol: TCP
+
           env:
             - name: SYMFONY__ENV__DATABASE_DRIVER
               value: pdo_pgsql
+
             - name: SYMFONY__ENV__DATABASE_HOST
               value: DATABASE_HOST_PLACEHOLDER
+
             - name: SYMFONY__ENV__DATABASE_PORT
               value: "5432"
+
             - name: SYMFONY__ENV__DATABASE_NAME
               value: wallabag
+
             - name: SYMFONY__ENV__DATABASE_USER
               valueFrom:
                 secretKeyRef:
                   name: wallabag-credentials
                   key: DATABASE_USER
+
             - name: SYMFONY__ENV__DATABASE_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: wallabag-credentials
                   key: DATABASE_PASSWORD
-            - name: SYMFONY__ENV__DOMAIN_NAME
-              value: DOMAIN_PLACEHOLDER
+
             - name: SYMFONY__ENV__DATABASE_CHARSET
               value: utf8
+
+            - name: SYMFONY__ENV__DOMAIN_NAME
+              value: DOMAIN_PLACEHOLDER
+
             - name: SYMFONY__ENV__FOSUSER_REGISTRATION
               value: "false"
+
+            - name: SYMFONY__ENV__REDIS_SCHEME
+              value: tcp
+
             - name: SYMFONY__ENV__REDIS_HOST
               value: REDIS_HOST_PLACEHOLDER
+
             - name: SYMFONY__ENV__REDIS_PORT
               value: "6379"
+
+            - name: POPULATE_DATABASE
+              value: "False"
+
+            - name: PHP_MEMORY_LIMIT
+              value: 512M
