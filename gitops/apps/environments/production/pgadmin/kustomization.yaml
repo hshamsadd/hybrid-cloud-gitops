@@ -1,0 +1,21 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: prod-pgadmin
+
+resources:
+  - ../../../base/pgadmin
+  - network-policy.yaml
+  - pvc.yaml
+  - reference-grant.yaml
+  - vault-auth.yaml
+  - vault-serviceaccount.yaml
+  - vault-static-secret-pgadmin.yaml
+
+patches:
+  - path: pgadmin-resources.yaml
+
+images:
+  - name: dpage/pgadmin4
+    newName: dpage/pgadmin4
+    newTag: "9.18"
+    digest: sha256:c332c5f6dfba995d9ebc4af261d93506d6876085d712eaaa3defc8dd1a3f26de

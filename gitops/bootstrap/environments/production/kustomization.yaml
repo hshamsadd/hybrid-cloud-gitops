@@ -7,5 +7,5 @@ resources:
   - database.yaml
   - prod-database-dr.yaml
   - cache.yaml
-  #- pgadmin.yaml
+  - pgadmin.yaml
   #- wallabag.yaml
