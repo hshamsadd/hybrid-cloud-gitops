@@ -5,7 +5,7 @@ resources:
   - cert-manager
   - coredns
   #- endpoints
-  #- endpointslices
+  - endpointslices
   - gateways
   - httproutes
   - ingressroutes
@@ -13,4 +13,4 @@ resources:
   - l2advertisement
   #- middlewares
   #- serverstransports
-  #- services
+  - services
