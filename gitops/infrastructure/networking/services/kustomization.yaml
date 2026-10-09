@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - dockge-service.yaml
   - portainer-service.yaml
-  #- qbittorrent-service.yaml
+  - qbittorrent-service.yaml

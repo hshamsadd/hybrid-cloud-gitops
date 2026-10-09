@@ -4,4 +4,4 @@ kind: Kustomization
 resources:
   - dockge-endpointslice.yaml
   - portainer-endpointslice.yaml
-  #- qbittorrent-endpointslice.yaml
+  - qbittorrent-endpointslice.yaml

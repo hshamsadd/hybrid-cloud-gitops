@@ -1,10 +1,18 @@
 apiVersion: v1
-kind: Endpoints
+kind: EndpointSlice
 metadata:
-  name: qbittorrent
+  name: qbittorrent-external
   namespace: networking
-subsets:
+  labels:
+    kubernetes.io/service-name: qbittorrent
+    endpointslice.kubernetes.io/managed-by: homelab-gitops
+addressType: IPv4
+ports:
+  - name: http
+    port: 80
+    protocol: TCP
+endpoints:
   - addresses:
-      - ip: 100.110.252.128
-    ports:
-      - port: 8701
+      - "100.110.252.128"
+    conditions:
+      ready: true
