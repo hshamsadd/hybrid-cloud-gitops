@@ -6,10 +6,10 @@ resources:
   - portainer-endpointslice.yaml
   - qbittorrent-endpointslice.yaml
   - jellyfin-endpointslice.yaml
-  - seer-endpointslice.yaml
+  - seerr-endpointslice.yaml
   - prowlarr-endpointslice.yaml
   - radarr-endpointslice.yaml
   - sonarr-endpointslice.yaml
   - lidarr-endpointslice.yaml
-  - whispar-v2-endpointslice.yaml
-  - whispar-v3-endpointslice.yaml
+  - whisparr-v2-endpointslice.yaml
+  - whisparr-v3-endpointslice.yaml
