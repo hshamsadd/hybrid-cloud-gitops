@@ -1,15 +1,15 @@
 apiVersion: discovery.k8s.io/v1
 kind: EndpointSlice
 metadata:
-  name: qbittorrent-external
+  name: radarr-external
   namespace: networking
   labels:
-    kubernetes.io/service-name: qbittorrent
+    kubernetes.io/service-name: radarr
     endpointslice.kubernetes.io/managed-by: homelab-gitops
 addressType: IPv4
 ports:
   - name: http
-    port: 8701
+    port: 7878
     protocol: TCP
 endpoints:
   - addresses:

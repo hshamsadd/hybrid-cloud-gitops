@@ -5,3 +5,11 @@ resources:
   - dockge-service.yaml
   - portainer-service.yaml
   - qbittorrent-service.yaml
+  - jellyfin-service.yaml
+  - seer-service.yaml
+  - prowlarr-service.yaml
+  - radarr-service.yaml
+  - sonarr-service.yaml
+  - lidarr-service.yaml
+  - whispar-v2-service.yaml
+  - whispar-v3-service.yaml
