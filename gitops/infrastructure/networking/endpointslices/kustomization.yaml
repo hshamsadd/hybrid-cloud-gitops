@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - dockge-endpointslice.yaml
   - portainer-endpointslice.yaml
+  - homepage-endpointslice.yaml
   - qbittorrent-endpointslice.yaml
   - jellyfin-endpointslice.yaml
   - seerr-endpointslice.yaml

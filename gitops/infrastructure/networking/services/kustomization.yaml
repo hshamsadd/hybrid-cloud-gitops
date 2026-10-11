@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - dockge-service.yaml
   - portainer-service.yaml
+  - homepage-service.yaml
   - qbittorrent-service.yaml
   - jellyfin-service.yaml
   - seerr-service.yaml
