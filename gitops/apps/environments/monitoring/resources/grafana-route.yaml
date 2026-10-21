@@ -5,12 +5,23 @@ metadata:
   namespace: monitoring
 spec:
   parentRefs:
-    - name: local-cluster-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: local-cluster-gateway
       namespace: networking
       sectionName: websecure
-  hostnames: ["grafana.home"]
+
+  hostnames:
+    - grafana.home
+
   rules:
     - matches:
-        - path: {type: PathPrefix, value: /}
+        - path:
+            type: PathPrefix
+            value: /
       backendRefs:
-        - {name: monitoring-grafana, port: 80}
+        - group: ""
+          kind: Service
+          name: monitoring-grafana
+          port: 80
+          weight: 1
