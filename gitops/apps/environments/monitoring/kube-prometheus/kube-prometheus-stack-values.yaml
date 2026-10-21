@@ -208,8 +208,7 @@ kube-state-metrics:
     node-restriction.kubernetes.io/always-on: "true"
 prometheus-node-exporter:
   nodeSelector:
-    node-restriction.kubernetes.io/persistent-storage: "true"
-    node-restriction.kubernetes.io/always-on: "true"
+    kubernetes.io/os: linux
   resources:
     requests:
       cpu: 25m
