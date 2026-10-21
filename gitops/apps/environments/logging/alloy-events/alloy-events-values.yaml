@@ -14,7 +14,10 @@ rbac:
     - apiGroups: [ "" ]
       resources: [ events ]
       verbs: [ get, list, watch ]
-  clusterRules: []
+  clusterRules:
+    - apiGroups: [ "" ]
+      resources: [ events ]
+      verbs: [ get, list, watch ]
 alloy:
   resources:
     requests: { cpu: 25m, memory: 70Mi }

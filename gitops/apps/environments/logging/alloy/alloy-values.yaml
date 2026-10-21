@@ -11,7 +11,10 @@ rbac:
     - apiGroups: [ "" ]
       resources: [ pods ]
       verbs: [ get, list, watch ]
-  clusterRules: []
+  clusterRules:
+    - apiGroups: [ "" ]
+      resources: [ pods ]
+      verbs: [ get, list, watch ]
 alloy:
   mounts:
     varlog: true
