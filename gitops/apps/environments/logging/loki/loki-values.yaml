@@ -63,6 +63,7 @@ minio: { enabled: false }
 chunksCache: { enabled: false }
 resultsCache: { enabled: false }
 lokiCanary: { enabled: false }
+test: { enabled: false }
 gateway:
   enabled: true
   replicas: 1
