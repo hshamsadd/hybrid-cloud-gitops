@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - environments
   - platform
+  - app-of-apps.yaml
