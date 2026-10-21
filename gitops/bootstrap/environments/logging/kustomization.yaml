@@ -4,5 +4,5 @@ kind: Kustomization
 resources:
   #- alloy-events.yaml
   #- alloy.yaml
-  #- loki-application.yaml
+  - loki-application.yaml
   - prereqs.yaml
