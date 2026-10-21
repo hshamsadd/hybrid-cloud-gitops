@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-6"
+  labels:
+    apps.home.lab/managed-by: argocd
+    apps.home.lab/workload: monitoring
+    # node-exporter uses host mounts, blocked by Pod Security baseline.
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: baseline

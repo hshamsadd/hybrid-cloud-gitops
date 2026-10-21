@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-cache
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/hshamsadd/hybrid-cloud-gitops.git
+    targetRevision: main
+    path: gitops/apps/environments/dev/cache
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: dev-cache
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
