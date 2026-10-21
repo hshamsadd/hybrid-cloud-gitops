@@ -1,0 +1,81 @@
+controller:
+  type: daemonset
+  nodeSelector:
+    kubernetes.io/os: linux
+  tolerations:
+    - operator: Exists
+# Grant only pod discovery, not secret/configmap reads or metrics APIs.
+rbac:
+  create: true
+  rules:
+    - apiGroups: [ "" ]
+      resources: [ pods ]
+      verbs: [ get, list, watch ]
+  clusterRules: []
+alloy:
+  mounts:
+    varlog: true
+  extraEnv:
+    - name: K8S_NODE_NAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
+  resources:
+    requests: { cpu: 35m, memory: 100Mi }
+    limits: { cpu: 250m, memory: 350Mi }
+  configMap:
+    create: true
+    content: |-
+      logging { level = "info" }
+      discovery.kubernetes "local_pods" {
+        role = "pod"
+        selectors {
+          role  = "pod"
+          field = "spec.nodeName=" + sys.env("K8S_NODE_NAME")
+        }
+      }
+      discovery.relabel "pod_logs" {
+        targets = discovery.kubernetes.local_pods.targets
+        rule {
+          source_labels = ["__meta_kubernetes_namespace"]
+          target_label = "namespace"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_name"]
+          target_label = "pod"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label = "container"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_container_name"]
+          target_label = "service_name"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_node_name"]
+          target_label = "node"
+        }
+        rule {
+          source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+          separator = "/"
+          regex = "(.*)/(.*)"
+          target_label = "__path__"
+          replacement = "/var/log/pods/*$1/$2/*.log"
+        }
+      }
+      local.file_match "pod_logs" {
+        path_targets = discovery.relabel.pod_logs.output
+      }
+      loki.source.file "pod_logs" {
+        targets = local.file_match.pod_logs.targets
+        forward_to = [loki.process.pod_logs.receiver]
+      }
+      loki.process "pod_logs" {
+        stage.cri {}
+        stage.static_labels { values = { cluster = "homelab", job = "kubernetes-pods" } }
+        forward_to = [loki.write.loki.receiver]
+      }
+      loki.write "loki" {
+        endpoint { url = "http://loki-gateway.logging.svc.cluster.local/loki/api/v1/push" }
+      }

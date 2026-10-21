@@ -1,0 +1,37 @@
+controller:
+  type: deployment
+  replicas: 1
+  nodeSelector:
+    node-restriction.kubernetes.io/always-on: "true"
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+# Event watcher needs events only, no Kubernetes secrets access.
+rbac:
+  create: true
+  rules:
+    - apiGroups: [ "" ]
+      resources: [ events ]
+      verbs: [ get, list, watch ]
+  clusterRules: []
+alloy:
+  resources:
+    requests: { cpu: 25m, memory: 70Mi }
+    limits: { cpu: 150m, memory: 200Mi }
+  configMap:
+    create: true
+    content: |-
+      logging { level = "info" }
+      loki.source.kubernetes_events "events" {
+        job_name   = "kubernetes-events"
+        log_format = "logfmt"
+        forward_to = [loki.process.events.receiver]
+      }
+      loki.process "events" {
+        stage.static_labels { values = { cluster = "homelab", service_name = "kubernetes-events", job = "kubernetes-events" } }
+        forward_to = [loki.write.loki.receiver]
+      }
+      loki.write "loki" {
+        endpoint { url = "http://loki-gateway.logging.svc.cluster.local/loki/api/v1/push" }
+      }
