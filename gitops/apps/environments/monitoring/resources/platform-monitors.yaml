@@ -1,0 +1,87 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-application-controller
+  namespace: monitoring
+  labels: { release: monitoring }
+spec:
+  namespaceSelector:
+    matchNames: [ argocd ]
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: argocd-metrics
+  endpoints:
+    - { port: metrics, interval: 30s }
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: central-postgres-ha
+  namespace: monitoring
+  labels: { release: monitoring }
+spec:
+  namespaceSelector:
+    matchNames: [ prod-database ]
+  selector:
+    matchLabels:
+      cnpg.io/cluster: central-postgres-ha
+  podMetricsEndpoints:
+    - { portNumber: 9187, interval: 30s }
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: longhorn-manager
+  namespace: monitoring
+  labels: { release: monitoring }
+spec:
+  namespaceSelector:
+    matchNames: [ longhorn-system ]
+  selector:
+    matchLabels: { app: longhorn-manager }
+  endpoints:
+    - { port: manager, interval: 30s }
+
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: argocd-application-controller
+#   namespace: monitoring
+#   labels: { release: monitoring }
+# spec:
+#   namespaceSelector:
+#     matchNames: [ argocd ]
+#   selector:
+#     matchLabels:
+#       app.kubernetes.io/name: argocd-metrics
+#   endpoints:
+#     - { port: metrics, interval: 30s }
+# ---
+# apiVersion: monitoring.coreos.com/v1
+# kind: PodMonitor
+# metadata:
+#   name: central-postgres-ha
+#   namespace: monitoring
+#   labels: { release: monitoring }
+# spec:
+#   namespaceSelector:
+#     matchNames: [ prod-database ]
+#   selector:
+#     matchLabels:
+#       cnpg.io/cluster: central-postgres-ha
+#   podMetricsEndpoints:
+#     - { port: metrics, interval: 30s }
+# ---
+# apiVersion: monitoring.coreos.com/v1
+# kind: ServiceMonitor
+# metadata:
+#   name: longhorn-manager
+#   namespace: monitoring
+#   labels: { release: monitoring }
+# spec:
+#   namespaceSelector:
+#     matchNames: [ longhorn-system ]
+#   selector:
+#     matchLabels: { app: longhorn-manager }
+#   endpoints:
+#     - { port: manager, interval: 30s }

@@ -1,0 +1,139 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: homelab-operational-rules
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  groups:
+  - name: homelab-connectivity
+    rules:
+    - alert: HomelabBlackboxProbeFailed
+      expr: probe_success == 0
+      for: 3m
+      labels:
+        severity: critical
+        domain: network
+      annotations:
+        summary: 'Connectivity failed: {{ $labels.instance }}'
+        description: Blackbox probe {{ $labels.job }} failed for 3m. Open the Connectivity
+          dashboard.
+    - alert: HomelabBlackboxProbeMissing
+      expr: absent(probe_success)
+      for: 10m
+      labels:
+        severity: warning
+        domain: network
+      annotations:
+        summary: All Blackbox probe series are missing
+        description: Probe service, selector or exporter may be unavailable.
+  - name: homelab-workload-health
+    rules:
+    - alert: HomelabContainerCrashLooping
+      expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"} ==
+        1
+      for: 5m
+      labels:
+        severity: critical
+        domain: kubernetes
+      annotations:
+        summary: 'CrashLoopBackOff: {{ $labels.namespace }}/{{ $labels.pod }}'
+        description: Container {{ $labels.container }} is crash-looping. Check the
+          Triage dashboard and Logs Drilldown.
+    - alert: HomelabContainerOOMKilled
+      expr: kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} ==
+        1
+      for: 2m
+      labels:
+        severity: warning
+        domain: kubernetes
+      annotations:
+        summary: 'OOMKilled: {{ $labels.namespace }}/{{ $labels.pod }}'
+        description: Container {{ $labels.container }} most recently terminated from
+          OOM.
+    - alert: HomelabJobFailed
+      expr: kube_job_status_failed > 0
+      for: 3m
+      labels:
+        severity: critical
+        domain: jobs
+      annotations:
+        summary: 'Job failed: {{ $labels.namespace }}/{{ $labels.job_name }}'
+        description: Look at Job history, pod events and related logs.
+    - alert: HomelabPVCNotBound
+      expr: kube_persistentvolumeclaim_status_phase{phase="Pending"} == 1
+      for: 10m
+      labels:
+        severity: warning
+        domain: storage
+      annotations:
+        summary: 'Pending PVC: {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim
+          }}'
+        description: PVC is not Bound; inspect storage class, scheduling and Longhorn.
+    - alert: HomelabPVCUsageHigh
+      expr: 100 * kubelet_volume_stats_used_bytes / clamp_min(kubelet_volume_stats_capacity_bytes,
+        1) > 85
+      for: 10m
+      labels:
+        severity: warning
+        domain: storage
+      annotations:
+        summary: 'PVC over 85%: {{ $labels.namespace }}/{{ $labels.persistentvolumeclaim
+          }}'
+        description: PVC usage is {{ $value | humanize }}%.
+    - alert: HomelabPodsPending
+      expr: kube_pod_status_phase{phase="Pending"} == 1
+      for: 15m
+      labels:
+        severity: warning
+        domain: kubernetes
+      annotations:
+        summary: 'Pod pending: {{ $labels.namespace }}/{{ $labels.pod }}'
+        description: Inspect Kubernetes events and scheduling constraints.
+    - alert: HomelabCNPGClusterNotReady
+      expr: count(kube_pod_status_ready{namespace="prod-database",condition="true",pod=~"central-postgres-ha-[0-9]+"}
+        == 1) < 3
+      for: 5m
+      labels:
+        severity: critical
+        domain: database
+      annotations:
+        summary: CNPG instance readiness below three
+        description: Inspect central-postgres-ha status; this rule does not replace
+          CNPG backup verification.
+  - name: homelab-gitops
+    rules:
+    - alert: HomelabArgoCDApplicationOutOfSync
+      expr: argocd_app_info{sync_status!="Synced"} == 1
+      for: 15m
+      labels:
+        severity: warning
+        domain: gitops
+      annotations:
+        summary: 'Argo CD app not synced: {{ $labels.name }}'
+        description: Check Argo CD controller metrics, Application health, and sync
+          results.
+  - name: homelab-storage
+    rules:
+    - alert: HomelabLonghornVolumeDegraded
+      expr: longhorn_volume_robustness{state=~"degraded|faulted"} == 1
+      for: 5m
+      labels:
+        severity: critical
+        domain: storage
+      annotations:
+        summary: Longhorn volume {{ $labels.volume }} is {{ $labels.state }}
+        description: Investigate replica health and disk/node availability in Longhorn
+          dashboard.
+    - alert: HomelabAlloyDaemonSetUnavailable
+      expr: kube_daemonset_status_number_unavailable{namespace="logging",daemonset="alloy"}
+        > 0
+      for: 10m
+      labels:
+        severity: warning
+        domain: logging
+      annotations:
+        summary: Alloy collector missing on node(s)
+        description: Inspect DaemonSet schedule and log ingest pipeline; log coverage
+          may have gaps.
