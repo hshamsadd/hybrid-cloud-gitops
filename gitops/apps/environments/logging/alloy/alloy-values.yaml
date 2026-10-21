@@ -18,11 +18,6 @@ rbac:
 alloy:
   mounts:
     varlog: true
-  extraEnv:
-    - name: K8S_NODE_NAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName
   resources:
     requests: { cpu: 35m, memory: 100Mi }
     limits: { cpu: 250m, memory: 350Mi }
