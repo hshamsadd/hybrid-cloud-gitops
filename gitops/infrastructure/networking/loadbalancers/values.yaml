@@ -5,9 +5,10 @@ providers:
   kubernetesGateway:
     enabled: true
     statusAddress:
-      hostname: "traefik-tailnet.tailfb03f6.ts.net"
       service:
-        enabled: false
+        enabled: true
+        name: traefik-tailnet
+        namespace: networking
 
   kubernetesIngress:
     enabled: true
@@ -18,16 +19,19 @@ providers:
   kubernetesCRD:
     enabled: true
     allowExternalNameServices: true
-    allowCrossNamespace: false
+    allowCrossNamespace: true
 
 gatewayClass:
-  enabled: true
+  enabled: false
 
 gateway:
-  enabled: true
+  enabled: false
+
+ingressClass:
+  enabled: false
 
 rbac:
-  enabled: false
+  enabled: true
 
 ports:
   web:
@@ -57,14 +61,10 @@ service:
       annotations:
         tailscale.com/proxy-group: traefik-ingress
         tailscale.com/hostname: traefik-tailnet
+        tailscale.com/tags: tag:k8s-ingress-service
       spec:
         type: LoadBalancer
         loadBalancerClass: tailscale
-
-tolerations:
-  - key: node-role.kubernetes.io/control-plane
-    operator: Exists
-    effect: NoSchedule
 
 api:
   dashboard: true
@@ -73,3 +73,31 @@ api:
 ingressRoute:
   dashboard:
     enabled: false
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: traefik
+              app.kubernetes.io/instance: traefik
+          topologyKey: kubernetes.io/hostname
