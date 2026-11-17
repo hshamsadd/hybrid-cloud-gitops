@@ -4,4 +4,3 @@ kind: Kustomization
 resources:
   - gateway-class.yaml
   - local-cluster-gateway.yaml
-  - traefik-gateway-rbac.yaml
