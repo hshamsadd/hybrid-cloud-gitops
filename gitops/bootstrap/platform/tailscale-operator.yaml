@@ -5,14 +5,16 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-10"
+
 spec:
   project: default
 
   sources:
     - repoURL: https://pkgs.tailscale.com/helmcharts
       chart: tailscale-operator
-      targetRevision: 1.102.4
+      targetRevision: 1.104.7
       helm:
+        releaseName: tailscale-operator
         valueFiles:
           - $values/gitops/infrastructure/networking/tailscale/operator/values.yaml
 
@@ -25,8 +27,6 @@ spec:
     namespace: tailscale
 
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
+      - ServerSideApply=true
       - CreateNamespace=true

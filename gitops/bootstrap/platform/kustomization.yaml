@@ -10,5 +10,6 @@ resources:
   - security.yaml
   - vault-secrets-operator.yaml
   - tailscale-operator-prereqs.yaml
-  #- tailscale-operator.yaml
+  - tailscale-operator.yaml
   - tailscale-ingress.yaml
+  - tailscale-dns.yaml
