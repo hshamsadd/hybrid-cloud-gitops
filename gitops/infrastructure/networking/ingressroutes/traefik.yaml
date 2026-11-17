@@ -7,8 +7,10 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`traefik.home`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`) || PathPrefix(`/`))
+    - match: Host(`traefik.home`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))
       kind: Rule
+      middlewares:
+        - name: traefik-dashboard-auth
       services:
         - name: api@internal
           kind: TraefikService
