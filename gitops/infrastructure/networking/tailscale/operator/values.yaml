@@ -10,7 +10,7 @@ operatorConfig:
 
   image:
     repository: tailscale/k8s-operator
-    tag: "v1.102.4"
+    tag: "v1.104.7"
     pullPolicy: IfNotPresent
 
   hostname: "hybrid-cloud-k8s-operator"
@@ -36,7 +36,7 @@ operatorConfig:
 proxyConfig:
   image:
     repository: tailscale/tailscale
-    tag: "v1.102.4"
+    tag: "v1.104.7"
     pullPolicy: IfNotPresent
 
   defaultTags: "tag:k8s-proxy"
