@@ -6,7 +6,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  minAvailable: 3
+  minAvailable: 1
   selector:
     matchLabels:
       tailscale.com/proxy-role: ingress-ha

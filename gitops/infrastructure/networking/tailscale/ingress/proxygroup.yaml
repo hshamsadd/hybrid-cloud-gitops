@@ -2,12 +2,11 @@ apiVersion: tailscale.com/v1alpha1
 kind: ProxyGroup
 metadata:
   name: traefik-ingress
-  namespace: tailscale
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
   type: ingress
-  replicas: 4
+  replicas: 2
   proxyClass: tailscale-ingress-ha
   tags:
     - "tag:k8s-proxy"
