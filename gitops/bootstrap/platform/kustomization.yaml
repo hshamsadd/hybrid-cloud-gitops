@@ -15,3 +15,5 @@ resources:
   - tailscale-operator.yaml
   - tailscale-ingress.yaml
   - tailscale-dns.yaml
+  - cert-manager.yaml
+  - cert-manager-certificates.yaml

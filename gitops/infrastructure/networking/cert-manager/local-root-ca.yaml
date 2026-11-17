@@ -2,7 +2,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: local-root-ca
-  namespace: networking
+  namespace: cert-manager
 spec:
   isCA: true
 

@@ -6,7 +6,6 @@ spec:
   ca:
     secretName: local-root-ca
 ---
-
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:

@@ -1,0 +1,19 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cert-manager-certificates
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/hshamsadd/hybrid-cloud-gitops.git
+    targetRevision: main
+    path: gitops/infrastructure/networking/cert-manager
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cert-manager
+
+  syncPolicy:
+    syncOptions:
+      - ServerSideApply=true
