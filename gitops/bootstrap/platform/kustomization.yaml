@@ -2,14 +2,13 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - barman-cloud.yaml
-  - cloudnative-pg.yaml
-  - storage.yaml
-  - rustfs.yaml
+  #- barman-cloud.yaml
+  #- cloudnative-pg.yaml
+  #- storage.yaml
+  #- rustfs.yaml
+  #- networking.yaml
   - security.yaml
-  - argocd.yaml
-  - networking.yaml
   - vault-secrets-operator.yaml
-  - tailscale-operator-prereqs.yaml
-  - tailscale-operator.yaml
-  - tailscale-ingress.yaml
+  #- tailscale-operator-prereqs.yaml
+  #- tailscale-operator.yaml
+  #- tailscale-ingress.yaml

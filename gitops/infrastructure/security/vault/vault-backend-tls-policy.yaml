@@ -10,5 +10,5 @@ spec:
       name: vault-service
 
   validation:
-    hostname: debian.tailfb03f6.ts.net
+    hostname: cp-1.tailfb03f6.ts.net
     wellKnownCACertificates: System
