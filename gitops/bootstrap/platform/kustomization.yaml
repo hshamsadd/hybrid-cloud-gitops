@@ -9,6 +9,6 @@ resources:
   #- networking.yaml
   - security.yaml
   - vault-secrets-operator.yaml
-  #- tailscale-operator-prereqs.yaml
+  - tailscale-operator-prereqs.yaml
   #- tailscale-operator.yaml
-  #- tailscale-ingress.yaml
+  - tailscale-ingress.yaml
