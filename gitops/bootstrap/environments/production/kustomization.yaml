@@ -3,7 +3,7 @@ kind: Kustomization
 
 resources:
   - namespaces.yaml
-  #- guardrails.yaml
+  - guardrails.yaml
   #- database.yaml
   #- prod-database-dr.yaml
   #- cache.yaml
