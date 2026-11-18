@@ -5,21 +5,23 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-6"
+    argocd.argoproj.io/sync-options: Prune=false
+
 spec:
   project: default
 
   source:
     repoURL: https://cloudnative-pg.github.io/charts
     chart: plugin-barman-cloud
-    targetRevision: 0.8.1
+    targetRevision: 0.9.0
+
     helm:
+      releaseName: barman-cloud
       values: |
         crds:
           create: true
 
         replicaCount: 2
-
-        priorityClassName: system-cluster-critical
 
         resources:
           requests:
@@ -30,9 +32,9 @@ spec:
             memory: 512Mi
 
         nodeSelector:
-          node-restriction.kubernetes.io/platform-eligible: "true"
-          node-restriction.kubernetes.io/always-on: "true"
           kubernetes.io/arch: amd64
+          node-restriction.kubernetes.io/always-on: "true"
+          node-restriction.kubernetes.io/cnpg-candidate: "true"
 
         tolerations:
           - key: node-role.kubernetes.io/control-plane
@@ -41,29 +43,32 @@ spec:
 
         topologySpreadConstraints:
           - maxSkew: 1
-            topologyKey: topology.kubernetes.io/zone
+            topologyKey: kubernetes.io/hostname
             whenUnsatisfiable: DoNotSchedule
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: plugin-barman-cloud
                 app.kubernetes.io/instance: barman-cloud
 
-          - maxSkew: 1
-            topologyKey: kubernetes.io/hostname
-            whenUnsatisfiable: DoNotSchedule
-            labelSelector:
-              matchLabels:
-                app.kubernetes.io/name: plugin-barman-cloud
-                app.kubernetes.io/instance: barman-cloud    
+        podSecurityContext:
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+
+        containerSecurityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+          readOnlyRootFilesystem: true
+          seccompProfile:
+            type: RuntimeDefault
 
   destination:
     server: https://kubernetes.default.svc
     namespace: cnpg-system
 
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
