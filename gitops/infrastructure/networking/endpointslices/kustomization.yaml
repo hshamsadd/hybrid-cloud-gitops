@@ -12,5 +12,3 @@ resources:
   - radarr-endpointslice.yaml
   - sonarr-endpointslice.yaml
   - lidarr-endpointslice.yaml
-  - whisparr-v2-endpointslice.yaml
-  - whisparr-v3-endpointslice.yaml

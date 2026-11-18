@@ -2,15 +2,8 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - cert-manager
-  - coredns
-  #- endpoints
   - endpointslices
-  - gateways
   - httproutes
   - ingressroutes
-  - Ipaddresspool
-  - l2advertisement
-  #- middlewares
-  #- serverstransports
+  - middlewares
   - services

@@ -12,5 +12,3 @@ resources:
   - radarr-service.yaml
   - sonarr-service.yaml
   - lidarr-service.yaml
-  - whisparr-v2-service.yaml
-  - whisparr-v3-service.yaml

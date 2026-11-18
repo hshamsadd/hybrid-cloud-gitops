@@ -6,7 +6,7 @@ resources:
   #- cloudnative-pg.yaml
   #- storage.yaml
   #- rustfs.yaml
-  #- networking.yaml
+  - networking.yaml
   - security.yaml
   - vault-secrets-operator.yaml
   - traefik.yaml
