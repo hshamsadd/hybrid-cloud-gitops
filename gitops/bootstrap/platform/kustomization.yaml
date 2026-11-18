@@ -17,3 +17,4 @@ resources:
   - tailscale-dns.yaml
   - cert-manager.yaml
   - cert-manager-certificates.yaml
+  - environments.yaml

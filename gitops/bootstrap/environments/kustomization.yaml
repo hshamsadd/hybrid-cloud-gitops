@@ -4,6 +4,6 @@ kind: Kustomization
 resources:
   #- development.yaml
   - production.yaml
-  - monitoring.yaml
-  - logging.yaml
+  #- monitoring.yaml
+  #- logging.yaml
   #- security.yaml

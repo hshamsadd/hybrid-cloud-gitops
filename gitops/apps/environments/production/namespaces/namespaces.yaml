@@ -2,6 +2,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: prod-database
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
   labels:
     apps.home.lab/managed-by: argocd
     apps.home.lab/environment: production
@@ -14,6 +16,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: prod-cache
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
   labels:
     apps.home.lab/managed-by: argocd
     apps.home.lab/environment: production
@@ -26,6 +30,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: prod-pgadmin
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
   labels:
     apps.home.lab/managed-by: argocd
     apps.home.lab/environment: production

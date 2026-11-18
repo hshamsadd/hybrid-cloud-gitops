@@ -5,19 +5,20 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   project: default
-
   source:
     repoURL: https://github.com/hshamsadd/hybrid-cloud-gitops.git
     targetRevision: main
     path: gitops/bootstrap/environments/production
-
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
-
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
+      enabled: false
+      prune: false
+      selfHeal: false
+    syncOptions:
+      - ServerSideApply=true
