@@ -5,21 +5,23 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "-7"
+    argocd.argoproj.io/sync-options: Prune=false
+
 spec:
   project: default
 
   source:
     repoURL: https://cloudnative-pg.github.io/charts
     chart: cloudnative-pg
-    targetRevision: 0.29.1
+    targetRevision: 0.29.2
+
     helm:
+      releaseName: cloudnative-pg
       values: |+
         crds:
           create: true
 
         replicaCount: 2
-
-        priorityClassName: system-cluster-critical
 
         resources:
           requests:
@@ -30,9 +32,9 @@ spec:
             memory: 512Mi
 
         nodeSelector:
-          node-restriction.kubernetes.io/platform-eligible: "true"
+          kubernetes.io/arch: amd64
           node-restriction.kubernetes.io/always-on: "true"
-          kubernetes.io/arch: amd64      
+          node-restriction.kubernetes.io/cnpg-candidate: "true"
               
         tolerations:
           - key: node-role.kubernetes.io/control-plane
@@ -41,20 +43,12 @@ spec:
 
         topologySpreadConstraints:
           - maxSkew: 1
-            topologyKey: topology.kubernetes.io/zone
-            whenUnsatisfiable: DoNotSchedule
-            labelSelector:
-              matchLabels:
-                app.kubernetes.io/name: cloudnative-pg
-                app.kubernetes.io/instance: cloudnative-pg
-
-          - maxSkew: 1
             topologyKey: kubernetes.io/hostname
             whenUnsatisfiable: DoNotSchedule
             labelSelector:
               matchLabels:
                 app.kubernetes.io/name: cloudnative-pg
-                app.kubernetes.io/instance: cloudnative-pg                   
+                app.kubernetes.io/instance: cloudnative-pg
 
         podSecurityContext:
           runAsNonRoot: true
@@ -73,10 +67,8 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: cnpg-system
+
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
