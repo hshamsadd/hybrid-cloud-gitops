@@ -3,6 +3,9 @@ kind: Kustomization
 
 resources:
   - barman-cloud.yaml
+  - barman-cloud-pdb.yaml
+  - cert-manager-certificates.yaml
+  - cert-manager.yaml
   - cloudnative-pg.yaml
   - cloudnative-pg-pdb.yaml
   #- rustfs.yaml
@@ -15,6 +18,4 @@ resources:
   - tailscale-operator.yaml
   - tailscale-ingress.yaml
   - tailscale-dns.yaml
-  - cert-manager.yaml
-  - cert-manager-certificates.yaml
   - environments.yaml
