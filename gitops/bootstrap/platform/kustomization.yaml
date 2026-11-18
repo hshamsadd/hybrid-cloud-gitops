@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
   #- barman-cloud.yaml
   - cloudnative-pg.yaml
-  #- storage.yaml
+  - cloudnative-pg-pdb.yaml
   #- rustfs.yaml
   - networking.yaml
   - security.yaml
