@@ -11,6 +11,7 @@ resources:
   #- rustfs.yaml
   - networking.yaml
   - security.yaml
+  - storage.yaml
   - vault-secrets-operator.yaml
   - traefik.yaml
   - traefik-gateway.yaml

@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cnpg-local-cp-1
+  labels:
+    apps.home.lab/workload: database
+    apps.home.lab/node: cp-1
+spec:
+  capacity:
+    storage: 30Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: cnpg-local
+  local:
+    path: /home/cnpg-local/pgdata
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - cp-1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: cnpg-local-cp-3
+  labels:
+    apps.home.lab/workload: database
+    apps.home.lab/node: cp-3
+spec:
+  capacity:
+    storage: 30Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: cnpg-local
+  local:
+    path: /var/lib/cnpg-local/pgdata
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - cp-3
