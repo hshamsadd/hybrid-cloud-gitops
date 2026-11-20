@@ -5,18 +5,20 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: Prune=false
+
 spec:
   project: default
+
   source:
     repoURL: https://github.com/hshamsadd/hybrid-cloud-gitops.git
     targetRevision: main
     path: gitops/apps/environments/production/pgadmin
+
   destination:
     server: https://kubernetes.default.svc
     namespace: prod-pgadmin
+
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - ServerSideApply=true
