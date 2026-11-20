@@ -7,7 +7,8 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn-ha
+  storageClassName: cnpg-local
+  volumeName: pgadmin-local-cp-1
   resources:
     requests:
       storage: 2Gi

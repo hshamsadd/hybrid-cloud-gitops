@@ -36,6 +36,11 @@ spec:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
               - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - cp-1
+
                   - key: kubernetes.io/arch
                     operator: In
                     values:

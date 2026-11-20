@@ -5,6 +5,7 @@ namespace: prod-pgadmin
 resources:
   - ../../../base/pgadmin
   - network-policy.yaml
+  - pv.yaml
   - pvc.yaml
   - reference-grant.yaml
 
