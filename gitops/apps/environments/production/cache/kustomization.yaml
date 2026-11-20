@@ -7,9 +7,6 @@ resources:
   - network-policy.yaml
   - pvc.yaml
   - redis-config.yaml
-  - vault-auth.yaml
-  - vault-serviceaccount.yaml
-  - vault-static-secret-redis.yaml
 
 patches:
   - path: redis-resources.yaml

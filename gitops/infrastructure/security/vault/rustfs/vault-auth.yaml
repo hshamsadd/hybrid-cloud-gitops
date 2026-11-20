@@ -1,0 +1,18 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: object-storage-vault-auth
+  namespace: object-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  vaultConnectionRef: vault-secrets-operator-system/default
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: kubernetes-object-storage
+    serviceAccount: rustfs-vault
+    audiences:
+      - vault
+    tokenExpirationSeconds: 600

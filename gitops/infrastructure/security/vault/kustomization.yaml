@@ -8,3 +8,7 @@ resources:
   - vault-route.yaml
   - vault-backend-tls-policy.yaml
   - argocd
+  - database
+  - cache
+  - pgadmin
+  - rustfs

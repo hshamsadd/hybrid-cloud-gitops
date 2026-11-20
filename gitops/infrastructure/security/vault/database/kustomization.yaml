@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: prod-database
+
+resources:
+  - database-dr
+  - vault-auth.yaml
+  - vault-serviceaccount.yaml
+  - vault-static-secret-cnpg-bootstrap.yaml
+  - vault-static-secret-cnpg-wallabag-role.yaml
+  - vault-static-secret-oci-postgres-dr.yaml
+  - vault-static-secret-pgadmin-admin.yaml
+  - vault-static-secret-pgadmin-reader.yaml

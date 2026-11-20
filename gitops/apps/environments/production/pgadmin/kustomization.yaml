@@ -7,9 +7,6 @@ resources:
   - network-policy.yaml
   - pvc.yaml
   - reference-grant.yaml
-  - vault-auth.yaml
-  - vault-serviceaccount.yaml
-  - vault-static-secret-pgadmin.yaml
 
 patches:
   - path: pgadmin-resources.yaml
