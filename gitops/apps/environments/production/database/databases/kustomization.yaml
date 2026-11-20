@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - wallabag-role.yaml
-  - wallabag-database.yaml
-  - pgadmin-reader-role.yaml
   - pgadmin-admin-role.yaml
+  - pgadmin-reader-role.yaml
+  - wallabag-database.yaml
+  - wallabag-role.yaml

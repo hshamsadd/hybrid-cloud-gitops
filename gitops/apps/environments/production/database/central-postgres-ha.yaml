@@ -7,7 +7,7 @@ metadata:
     apps.home.lab/workload: database
 
 spec:
-  instances: 3
+  instances: 2
   primaryUpdateStrategy: supervised
 
   imageName: ghcr.io/cloudnative-pg/postgresql:17-standard-trixie
@@ -32,8 +32,8 @@ spec:
       cpu: "1"
 
   storage:
-    size: 15Gi
-    storageClass: longhorn-ha
+    size: 30Gi
+    storageClass: cnpg-local
 
   affinity:
     enablePodAntiAffinity: true
@@ -41,9 +41,8 @@ spec:
     podAntiAffinityType: required
 
     nodeSelector:
-      cnpg-ha: "true"
+      node-restriction.kubernetes.io/cnpg-candidate: "true"
       kubernetes.io/arch: amd64
-      node-restriction.kubernetes.io/persistent-storage: "true"
       node-restriction.kubernetes.io/always-on: "true"
 
     tolerations:
@@ -61,8 +60,7 @@ spec:
     synchronous:
       method: any
       number: 1
-      dataDurability: required
-      failoverQuorum: true
+      dataDurability: preferred
 
   probes:
     liveness:

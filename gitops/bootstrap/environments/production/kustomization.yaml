@@ -4,7 +4,7 @@ kind: Kustomization
 resources:
   - namespaces.yaml
   - guardrails.yaml
-  #- database.yaml
+  - database.yaml
   #- prod-database-dr.yaml
   #- cache.yaml
   #- pgadmin.yaml
