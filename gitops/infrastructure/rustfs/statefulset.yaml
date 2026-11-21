@@ -5,9 +5,12 @@ metadata:
   labels:
     app.kubernetes.io/name: rustfs
     app.kubernetes.io/component: object-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-8"
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   serviceName: rustfs-headless
-  replicas: 4
+  replicas: 2
   podManagementPolicy: Parallel
   updateStrategy:
     type: RollingUpdate
@@ -180,4 +183,4 @@ spec:
         storageClassName: longhorn-rustfs
         resources:
           requests:
-            storage: 20Gi #instead of 50
+            storage: 20Gi

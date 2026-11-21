@@ -2,6 +2,7 @@ apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:
   name: central-postgres-ha
+  namespace: prod-database
   labels:
     apps.home.lab/environment: production
     apps.home.lab/workload: database
@@ -91,5 +92,5 @@ spec:
       enabled: true
       isWALArchiver: true
       parameters:
-        barmanObjectName: oci-postgres-backups
+        barmanObjectName: rustfs-postgres-backups-primary
         serverName: central-postgres-ha

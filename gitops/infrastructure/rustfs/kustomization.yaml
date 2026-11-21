@@ -4,13 +4,12 @@ namespace: object-storage
 
 resources:
   - bucket-bootstrap.yaml
-  - namespace.yaml
+  - deployment.yaml
   - network-policy.yaml
-  - pdb.yaml
-  - resources-quota.yaml
+  #- pdb.yaml
+  - persistentvolume.yaml
+  - pvc.yaml
   - rustfs-route.yaml
   - service.yaml
-  - statefulset.yaml
-  - vault-auth.yaml
-  - vault-serviceaccount.yaml
-  - vault-static-secret.yaml
+  #- statefulset.yaml
+  - storageclass.yaml

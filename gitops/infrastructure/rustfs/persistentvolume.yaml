@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rustfs-local-cp-1
+  labels:
+    app.kubernetes.io/name: rustfs
+    storage-node: cp-1
+spec:
+  capacity:
+    storage: 45Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: rustfs-local
+
+  local:
+    path: /var/lib/rustfs
+
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - cp-1

@@ -7,4 +7,6 @@ resources:
   - barman-objectstore.yaml
   - central-postgres-ha.yaml
   - network-policy.yaml
+  - rustfs-primary-objectstore.yaml
+  - rustfs-to-oci-cronjob.yaml
   - scheduled-backup-ha.yaml

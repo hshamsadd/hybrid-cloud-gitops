@@ -2,8 +2,13 @@ apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
   name: rustfs
+  namespace: object-storage
+  annotations:
+    argocd.argoproj.io/sync-wave: "-8"
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
-  minAvailable: 3
+  minAvailable: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: rustfs
+      app.kubernetes.io/instance: rustfs
