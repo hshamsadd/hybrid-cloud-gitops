@@ -5,6 +5,8 @@ metadata:
   namespace: argocd
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: Prune=false
+
 spec:
   project: default
 
@@ -18,8 +20,5 @@ spec:
     namespace: prod-database
 
   syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
     syncOptions:
       - ServerSideApply=true
