@@ -1,0 +1,4 @@
+vault_addr = "https://debian.tailfb03f6.ts.net:8200"
+kubernetes_host = "https://k8s-api.tailfb03f6.ts.net:6443"
+
+# Sensitive values are supplied through TF_VAR_* environment variables.

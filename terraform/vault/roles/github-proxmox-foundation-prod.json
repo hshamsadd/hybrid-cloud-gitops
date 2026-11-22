@@ -1,0 +1,21 @@
+{
+  "role_type": "jwt",
+  "user_claim": "actor",
+  "bound_audiences": [
+    "vault:core-platform"
+  ],
+  "bound_subject": "repo:hshamsadd@209839117/hybrid-cloud-gitops@1291238687:environment:production",
+  "bound_claims_type": "string",
+  "bound_claims": {
+    "repository": "hshamsadd/hybrid-cloud-gitops",
+    "ref": "refs/heads/main",
+    "environment": "production",
+    "runner_environment": "github-hosted",
+    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/proxmox-infra-foundation.yml@refs/heads/main"
+  },
+  "token_policies": [
+    "pipeline-proxmox-foundation-prod"
+  ],
+  "token_ttl": "30m",
+  "token_max_ttl": "45m"
+}

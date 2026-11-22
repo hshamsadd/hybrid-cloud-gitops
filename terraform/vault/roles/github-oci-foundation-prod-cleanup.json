@@ -1,0 +1,21 @@
+{
+  "role_type": "jwt",
+  "user_claim": "actor",
+  "bound_audiences": [
+    "vault:core-platform"
+  ],
+  "bound_subject": "repo:hshamsadd@209839117/hybrid-cloud-gitops@1291238687:environment:production",
+  "bound_claims_type": "string",
+  "bound_claims": {
+    "environment": "production",
+    "ref": "refs/heads/main",
+    "repository": "hshamsadd/hybrid-cloud-gitops",
+    "runner_environment": "github-hosted",
+    "workflow_ref": "hshamsadd/hybrid-cloud-gitops/.github/workflows/oci-infra-foundation-cleanup.yml@refs/heads/main"
+  },
+  "token_policies": [
+    "pipeline-oci-foundation-prod"
+  ],
+  "token_ttl": 1800,
+  "token_max_ttl": 2700
+}
