@@ -1,11 +1,16 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: wallabag-data
+  name: wallabag-storage
+  namespace: prod-wallabag
+  labels:
+    apps.home.lab/environment: production
+    apps.home.lab/workload: wallabag
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: longhorn-ha
+  storageClassName: wallabag-local
+  volumeName: wallabag-local-cp-1
   resources:
     requests:
-      storage: 10Gi
+      storage: 5Gi

@@ -20,12 +20,12 @@ spec:
     spec:
       containers:
         - name: wallabag
-          image: wallabag/wallabag:2.6.14
+          image: ghcr.io/hshamsadd/wallabag-rootless:2.6.18-1@sha256:27a9e1b14546a6e1df99c863de3888c5eccf0d6f7d322482b89456350da2aab9
           imagePullPolicy: IfNotPresent
 
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
 
           env:

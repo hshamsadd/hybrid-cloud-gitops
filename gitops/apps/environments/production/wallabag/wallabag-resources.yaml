@@ -28,17 +28,15 @@ spec:
         seccompProfile:
           type: RuntimeDefault
 
-      affinity:
-        nodeAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            nodeSelectorTerms:
-              - matchExpressions:
-                  - key: node-role.kubernetes.io/control-plane
-                    operator: DoesNotExist
-                  - key: cnpg-ha
-                    operator: NotIn
-                    values:
-                      - "true"
+      nodeSelector:
+        kubernetes.io/hostname: cp-1
+        kubernetes.io/arch: amd64
+        node-restriction.kubernetes.io/always-on: "true"
+
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
 
       containers:
         - name: wallabag
@@ -50,11 +48,6 @@ spec:
                 - ALL
             seccompProfile:
               type: RuntimeDefault
-
-          ports:
-            - name: http
-              containerPort: 80
-              protocol: TCP
 
           readinessProbe:
             httpGet:
@@ -94,17 +87,15 @@ spec:
               memory: 1Gi
 
           volumeMounts:
-            - name: wallabag-data
+            - name: wallabag-storage
               mountPath: /var/www/wallabag/data
+              subPath: data
 
-            - name: wallabag-images
+            - name: wallabag-storage
               mountPath: /var/www/wallabag/web/assets/images
+              subPath: images
 
       volumes:
-        - name: wallabag-data
+        - name: wallabag-storage
           persistentVolumeClaim:
-            claimName: wallabag-data
-
-        - name: wallabag-images
-          persistentVolumeClaim:
-            claimName: wallabag-images
+            claimName: wallabag-storage
