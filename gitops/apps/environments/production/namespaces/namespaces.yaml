@@ -39,19 +39,20 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
-
-# ---
-# apiVersion: v1
-# kind: Namespace
-# metadata:
-#   name: prod-wallabag
-#   labels:
-#     apps.home.lab/managed-by: argocd
-#     apps.home.lab/environment: production
-#     apps.home.lab/workload: wallabag
-#     pod-security.kubernetes.io/enforce: restricted
-#     pod-security.kubernetes.io/audit: restricted
-#     pod-security.kubernetes.io/warn: restricted
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod-wallabag
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+  labels:
+    apps.home.lab/managed-by: argocd
+    apps.home.lab/environment: production
+    apps.home.lab/workload: wallabag
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
 ---
 apiVersion: v1
 kind: Namespace
