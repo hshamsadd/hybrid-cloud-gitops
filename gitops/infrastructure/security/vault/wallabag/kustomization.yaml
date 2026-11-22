@@ -5,4 +5,5 @@ namespace: prod-wallabag
 resources:
   - vault-auth.yaml
   - vault-serviceaccount.yaml
+  - vault-static-secret-redis.yaml
   - vault-static-secret-wallabag.yaml
