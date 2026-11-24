@@ -7,6 +7,13 @@ oauth:
 operatorConfig:
   defaultTags:
     - "tag:k8s-operator"
+  extraEnv:
+    - name: HTTP_PROXY
+      value: "http://172.16.0.1:13128"
+    - name: HTTPS_PROXY
+      value: "http://172.16.0.1:13128"
+    - name: NO_PROXY
+      value: "localhost,127.0.0.1,::1,.svc,.svc.cluster.local,.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16,172.16.0.0/24,192.168.8.0/24,100.64.0.0/10"
 
   image:
     repository: tailscale/k8s-operator
@@ -17,6 +24,7 @@ operatorConfig:
   logging: "info"
 
   nodeSelector:
+    kubernetes.io/hostname: cp-3
     node-restriction.kubernetes.io/always-on: "true"
     node-restriction.kubernetes.io/platform-eligible: "true"
 
