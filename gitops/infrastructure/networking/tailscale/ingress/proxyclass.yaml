@@ -29,6 +29,14 @@ spec:
         tailscale.com/proxy-role: ingress-ha
 
       tailscaleContainer:
+        env:
+          - name: HTTP_PROXY
+            value: "http://10.244.0.1:3128"
+          - name: HTTPS_PROXY
+            value: "http://10.244.0.1:3128"
+          - name: NO_PROXY
+            value: "localhost,127.0.0.1,::1,.svc,.svc.cluster.local,.cluster.local,kubernetes.default.svc,10.96.0.0/12,10.244.0.0/16,100.64.0.0/10"
+
         resources:
           requests:
             cpu: 100m
