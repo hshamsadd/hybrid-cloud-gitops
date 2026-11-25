@@ -5,6 +5,5 @@ resources:
   - cache.yaml
   - database.yaml
   - guardrails.yaml
-  - namespaces.yaml
   - pgadmin.yaml
   - wallabag.yaml
