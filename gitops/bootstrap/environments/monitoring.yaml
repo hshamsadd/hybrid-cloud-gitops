@@ -4,20 +4,25 @@ metadata:
   name: observability-monitoring
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-5"
+    argocd.argoproj.io/sync-wave: "-4"
+    argocd.argoproj.io/sync-options: Prune=false
+
 spec:
   project: default
+
   source:
     repoURL: https://github.com/hshamsadd/hybrid-cloud-gitops.git
     targetRevision: main
     path: gitops/bootstrap/environments/monitoring
+
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
+
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
+      enabled: false
+      prune: false
+      selfHeal: false
     syncOptions:
-      - CreateNamespace=false
       - ServerSideApply=true
