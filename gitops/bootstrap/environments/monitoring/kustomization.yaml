@@ -3,6 +3,4 @@ kind: Kustomization
 
 resources:
   - kube-prometheus.yaml
-  #- longhorn-metrics-access.yaml
-  - monitoring-resources.yaml
-  - prereqs.yaml
+  #- monitoring-resources.yaml

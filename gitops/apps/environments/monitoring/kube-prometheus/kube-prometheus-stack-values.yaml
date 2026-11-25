@@ -1,14 +1,19 @@
 fullnameOverride: kube-prometheus-stack
+
 crds:
   enabled: true
+
 defaultRules:
   create: true
   disabled:
+    # Enable after validating the kubeadm metrics endpoints.
     KubeControllerManagerDown: true
     KubeSchedulerDown: true
     KubeProxyDown: true
+
 alertmanager:
   enabled: true
+
   config:
     global:
       smtp_smarthost: smtp.gmail.com:587
@@ -16,99 +21,147 @@ alertmanager:
       smtp_auth_username: hushamadd@gmail.com
       smtp_auth_password_file: /etc/alertmanager/secrets/alertmanager-email-credentials-vault/SMTP_PASSWORD
       smtp_require_tls: true
+
     route:
-      receiver: 'null' # Unclassified alerts suppressed; add explicit routes as required.
+      # Deliver warning and critical alerts to email.
+      # Informational alerts remain visible in Alertmanager.
+      receiver: 'null'
       group_by:
         - namespace
         - alertname
-      group_wait: 5m
-      group_interval: 1h
+      group_wait: 1m
+      group_interval: 15m
       repeat_interval: 24h
+
       routes:
         - receiver: 'null'
           matchers:
             - alertname = "Watchdog"
+
         - receiver: email
           matchers:
             - severity = "critical"
-          group_wait: 1m
-          repeat_interval: 6h
+          group_wait: 30s
+          repeat_interval: 4h
+
         - receiver: email
           matchers:
             - severity = "warning"
-          group_wait: 10m
-          repeat_interval: 24h
+          group_wait: 5m
+          repeat_interval: 12h
+
     receivers:
       - name: email
         email_configs:
           - to: hushamadd@gmail.com
             send_resolved: true
       - name: 'null'
+
   alertmanagerSpec:
+    replicas: 1
+
     nodeSelector:
-      node-restriction.kubernetes.io/persistent-storage: "true"
+      kubernetes.io/os: linux
       node-restriction.kubernetes.io/always-on: "true"
+      node-restriction.kubernetes.io/metrics-storage: "true"
+
     retention: 120h
+
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 2000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+
     storage:
       volumeClaimTemplate:
         spec:
-          storageClassName: longhorn-ha
+          storageClassName: alertmanager-local
           accessModes:
             - ReadWriteOnce
           resources:
             requests:
               storage: 1Gi
+
     resources:
       requests:
-        cpu: 50m
-        memory: 128Mi
+        cpu: 25m
+        memory: 64Mi
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 150m
+        memory: 256Mi
+
     secrets:
       - alertmanager-email-credentials-vault
+
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
+
 grafana:
   enabled: true
+  replicas: 1
+
   nodeSelector:
-    node-restriction.kubernetes.io/persistent-storage: "true"
+    kubernetes.io/os: linux
     node-restriction.kubernetes.io/always-on: "true"
+    node-restriction.kubernetes.io/metrics-storage: "true"
+
   admin:
     existingSecret: grafana-admin-credentials-vault
     userKey: ADMIN_USER
     passwordKey: ADMIN_PASSWORD
-  additionalDataSources:
-    - name: Loki
-      uid: loki
-      type: loki
-      access: proxy
-      url: http://loki-gateway.logging.svc.cluster.local
-      isDefault: false
-      jsonData:
-        maxLines: 1000
+
+  # Enable the Loki datasource when Loki is deployed.
+  additionalDataSources: []
+
   persistence:
     enabled: true
     type: pvc
-    storageClassName: longhorn-ha
+    storageClassName: grafana-local
     accessModes:
       - ReadWriteOnce
     size: 2Gi
+
+  # The local storage directory is already owned by UID/GID 472.
+  initChownData:
+    enabled: false
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 472
+    runAsGroup: 472
+    fsGroup: 472
+
+  deploymentStrategy:
+    type: Recreate
+
   ingress:
     enabled: false
+
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
-      cpu: 500m
+      cpu: 400m
       memory: 512Mi
-  image:
-    repository: grafana/grafana
-    tag: 13.2.4
+
+  # Use the pinned chart's bundled Grafana image version.
+  # Avoid independently overriding component versions.
+
   sidecar:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 128Mi
+
     dashboards:
       enabled: true
       label: grafana_dashboard
@@ -116,107 +169,196 @@ grafana:
       searchNamespace: monitoring
       provider:
         allowUiUpdates: false
+
     datasources:
       enabled: true
       uid: prometheus
       label: grafana_datasource
       searchNamespace: monitoring
+
   defaultDashboardsEnabled: true
+
   grafana.ini:
     users:
       default_theme: dark
+      allow_sign_up: false
     security:
       allow_embedding: false
+    auth.anonymous:
+      enabled: false
+
   serviceMonitor:
     enabled: true
+
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
       effect: NoSchedule
+
 prometheus:
   enabled: true
+
   prometheusSpec:
+    replicas: 1
+    shards: 1
+
     nodeSelector:
-      node-restriction.kubernetes.io/persistent-storage: "true"
+      kubernetes.io/os: linux
       node-restriction.kubernetes.io/always-on: "true"
-    retention: 10d
-    retentionSize: 8GB
+      node-restriction.kubernetes.io/metrics-storage: "true"
+
+    # Bounded retention protects the shared backing volume.
+    # Allow headroom for WAL, compaction and temporary blocks.
+    retention: 15d
+    retentionSize: 15GB
     walCompression: true
+
     scrapeInterval: 30s
     evaluationInterval: 30s
+
+    securityContext:
+      runAsNonRoot: true
+      runAsUser: 1000
+      runAsGroup: 2000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+
     storageSpec:
       volumeClaimTemplate:
         spec:
-          storageClassName: longhorn-ha
+          storageClassName: prometheus-local
           accessModes:
             - ReadWriteOnce
           resources:
             requests:
-              storage: 10Gi
+              storage: 20Gi
+
     resources:
       requests:
         cpu: 250m
         memory: 1Gi
       limits:
-        cpu: '1'
+        cpu: 750m
         memory: 2Gi
+
     tolerations:
       - key: node-role.kubernetes.io/control-plane
         operator: Exists
         effect: NoSchedule
+
+    # Discover explicitly labelled monitors and rules.
+    # Keep the release name consistent with the Argo CD application.
     serviceMonitorSelectorNilUsesHelmValues: true
     podMonitorSelectorNilUsesHelmValues: true
     probeSelectorNilUsesHelmValues: false
     ruleSelectorNilUsesHelmValues: false
+
     probeSelector:
       matchLabels:
         release: monitoring
+
     ruleSelector:
       matchLabels:
         release: monitoring
+
     serviceMonitorNamespaceSelector: {}
     podMonitorNamespaceSelector: {}
     ruleNamespaceSelector: {}
     probeNamespaceSelector: {}
+
     enableAdminAPI: false
+
 prometheusOperator:
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/hostname: cp-3
+    node-restriction.kubernetes.io/always-on: "true"
+    node-restriction.kubernetes.io/observability-eligible: "true"
+
   resources:
     requests:
-      cpu: 100m
+      cpu: 75m
       memory: 128Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 300m
+      memory: 256Mi
+
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
       effect: NoSchedule
+
+  # Explicit reloader requests prevent unexpected CPU reservations.
+  prometheusConfigReloader:
+    resources:
+      requests:
+        cpu: 10m
+        memory: 32Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi
+
+  admissionWebhooks:
+    enabled: true
+
+    patch:
+      enabled: true
+
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-restriction.kubernetes.io/observability-eligible: "true"
+
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+
+    deployment:
+      nodeSelector:
+        kubernetes.io/os: linux
+        node-restriction.kubernetes.io/observability-eligible: "true"
+
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+
 kube-state-metrics:
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/hostname: cp-3
+    node-restriction.kubernetes.io/always-on: "true"
+    node-restriction.kubernetes.io/observability-eligible: "true"
+
   resources:
     requests:
-      cpu: 25m
-      memory: 64Mi
+      cpu: 50m
+      memory: 96Mi
     limits:
-      cpu: 250m
+      cpu: 200m
       memory: 256Mi
+
   tolerations:
     - key: node-role.kubernetes.io/control-plane
       operator: Exists
       effect: NoSchedule
-  nodeSelector:
-    node-restriction.kubernetes.io/persistent-storage: "true"
-    node-restriction.kubernetes.io/always-on: "true"
+
 prometheus-node-exporter:
+  # Collect metrics from every Linux node, including ARM64.
+  # Do not restrict exporters to persistent-storage nodes.
   nodeSelector:
-    #kubernetes.io/os: linux
-    node-restriction.kubernetes.io/persistent-storage: "true"
-    node-restriction.kubernetes.io/always-on: "true"
+    kubernetes.io/os: linux
+
   resources:
     requests:
       cpu: 25m
       memory: 64Mi
     limits:
-      cpu: 250m
-      memory: 256Mi
+      cpu: 150m
+      memory: 128Mi
+
   tolerations:
-    - operator: Exists
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
