@@ -5,6 +5,8 @@ namespace: monitoring
 resources:
   - blackbox-exporter.yaml
   - dashboards-configmap.yaml
-  #- health-dashboard.yaml
   - operational-rules.yaml
   - platform-monitors.yaml
+  # Enable only after the development health database
+  # and its Vault-managed Grafana datasource exist.
+  # - health-dashboard.yaml

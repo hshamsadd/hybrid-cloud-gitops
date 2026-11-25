@@ -3,4 +3,4 @@ kind: Kustomization
 
 resources:
   - kube-prometheus.yaml
-  #- monitoring-resources.yaml
+  - monitoring-resources.yaml
