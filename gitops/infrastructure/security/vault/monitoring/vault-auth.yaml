@@ -1,0 +1,17 @@
+apiVersion: secrets.hashicorp.com/v1beta1
+kind: VaultAuth
+metadata:
+  name: monitoring-vault-auth
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-wave: "-4"
+spec:
+  vaultConnectionRef: vault-secrets-operator-system/default
+  method: kubernetes
+  mount: kubernetes
+  kubernetes:
+    role: kubernetes-monitoring
+    serviceAccount: monitoring-vault
+    audiences:
+      - vault
+    tokenExpirationSeconds: 600

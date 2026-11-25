@@ -7,8 +7,9 @@ metadata:
   labels:
     apps.home.lab/managed-by: argocd
     apps.home.lab/workload: logging
-    # Alloy needs read-only hostPath /var/log on each node.
-    # Namespace privilege must be restricted with Argo project/RBAC and NetworkPolicies.
+    # Alloy requires read-only hostPath mounts for node log collection.
+    # Restrict workload creation through Kubernetes RBAC and Argo CD.
+    # NetworkPolicies require a compatible policy enforcement engine.
     pod-security.kubernetes.io/enforce: privileged
     pod-security.kubernetes.io/audit: baseline
     pod-security.kubernetes.io/warn: baseline

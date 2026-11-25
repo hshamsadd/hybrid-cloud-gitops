@@ -9,6 +9,7 @@ resources:
   - vault-backend-tls-policy.yaml
   - argocd
   - database
+  - monitoring
   - cache
   - pgadmin
   - rustfs
