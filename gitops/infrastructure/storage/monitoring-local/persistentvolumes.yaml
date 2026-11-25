@@ -1,0 +1,95 @@
+# Monitoring storage resides on cp-2 in a preallocated
+# 30GiB ext4 filesystem backed by the OCI block volume.
+#
+# The backing block volume also hosts external etcd.
+# Capacity is isolated, but physical disk I/O is shared.
+#
+# Individual PV capacities are logical allocations,
+# not independently enforced filesystem quotas.
+#
+# Retain and Argo CD deletion protections preserve
+# monitoring data during application maintenance.
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-local-cp-2
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    apps.home.lab/workload: monitoring
+    apps.home.lab/component: prometheus
+spec:
+  capacity:
+    storage: 20Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: prometheus-local
+  local:
+    path: /mnt/monitoring-data/prometheus
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - cp-2
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: grafana-local-cp-2
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    apps.home.lab/workload: monitoring
+    apps.home.lab/component: grafana
+spec:
+  capacity:
+    storage: 2Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: grafana-local
+  local:
+    path: /mnt/monitoring-data/grafana
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - cp-2
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: alertmanager-local-cp-2
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false,Delete=false
+  labels:
+    apps.home.lab/workload: monitoring
+    apps.home.lab/component: alertmanager
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: alertmanager-local
+  local:
+    path: /mnt/monitoring-data/alertmanager
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - cp-2
