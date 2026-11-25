@@ -1,0 +1,23 @@
+# OPT-IN ONLY: validate modern eBPF/kernel compatibility and resources on ARM/AMD first.
+# Do not enable automatically before verifying privileged permissions and driver support.
+driver:
+  kind: modern_ebpf
+falco:
+  json_output: true
+  json_include_output_property: true
+  log_level: info
+falcosidekick:
+  enabled: true
+  config:
+    loki:
+      hostport: http://loki-gateway.logging.svc.cluster.local
+      endpoint: /loki/api/v1/push
+      format: json
+      minimumpriority: warning
+    minimumpriority: warning
+    debug: false
+resources:
+  requests: { cpu: 75m, memory: 192Mi }
+  limits: { cpu: 600m, memory: 768Mi }
+tolerations:
+  - operator: Exists

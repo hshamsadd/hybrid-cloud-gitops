@@ -1,23 +1,28 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: security-prereqs
+  name: namespaces
   namespace: argocd
   annotations:
-    argocd.argoproj.io/sync-wave: "-8"
+    argocd.argoproj.io/sync-wave: "0"
+    argocd.argoproj.io/sync-options: Prune=false
+
 spec:
   project: default
+
   source:
     repoURL: https://github.com/hshamsadd/hybrid-cloud-gitops.git
     targetRevision: main
-    path: gitops/apps/environments/security/prereqs
+    path: gitops/apps/environments/namespaces
+
   destination:
     server: https://kubernetes.default.svc
-    namespace: security
+    namespace: argocd
+
   syncPolicy:
     automated:
-      prune: true
-      selfHeal: true
+      enabled: false
+      prune: false
+      selfHeal: false
     syncOptions:
-      - CreateNamespace=false
       - ServerSideApply=true

@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   #- development.yaml
+  - namespaces.yaml
   - production.yaml
   #- monitoring.yaml
   #- logging.yaml

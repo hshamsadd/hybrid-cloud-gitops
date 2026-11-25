@@ -5,7 +5,6 @@ namespace: monitoring
 resources:
   - blackbox-exporter.yaml
   - dashboards-configmap.yaml
-  - grafana-route.yaml
   #- health-dashboard.yaml
   - operational-rules.yaml
   - platform-monitors.yaml
