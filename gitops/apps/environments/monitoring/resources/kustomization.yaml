@@ -3,6 +3,7 @@ kind: Kustomization
 namespace: monitoring
 
 resources:
+  - backup-dr-rules.yaml
   - blackbox-exporter.yaml
   - dashboards-configmap.yaml
   - operational-rules.yaml

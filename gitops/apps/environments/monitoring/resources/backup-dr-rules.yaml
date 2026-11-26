@@ -1,0 +1,483 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cluster-backup-dr-rules
+  namespace: monitoring
+  labels:
+    release: monitoring
+
+spec:
+  groups:
+    # ============================================================
+    # Normalized backup and disaster recovery metrics
+    # ============================================================
+
+    - name: cluster-backup-dr-recording
+      rules:
+        - record: cluster:postgres_backup_last_success_timestamp_seconds
+          expr: |
+            max(
+              barman_cloud_cloudnative_pg_io_last_available_backup_timestamp{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              }
+            )
+
+        - record: cluster:postgres_backup_last_failure_timestamp_seconds
+          expr: |
+            max(
+              barman_cloud_cloudnative_pg_io_last_failed_backup_timestamp{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              }
+            )
+
+        - record: cluster:postgres_first_recoverability_timestamp_seconds
+          expr: |
+            max(
+              barman_cloud_cloudnative_pg_io_first_recoverability_point{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              }
+            )
+
+        - record: cluster:postgres_backup_age_seconds
+          expr: |
+            time() -
+            cluster:postgres_backup_last_success_timestamp_seconds
+
+        - record: cluster:oci_dr_last_success_timestamp_seconds
+          expr: |
+            max(
+              kube_cronjob_status_last_successful_time{
+                namespace="prod-database",
+                cronjob="postgres-backups-rustfs-to-oci"
+              }
+            )
+
+        - record: cluster:oci_dr_last_schedule_timestamp_seconds
+          expr: |
+            max(
+              kube_cronjob_status_last_schedule_time{
+                namespace="prod-database",
+                cronjob="postgres-backups-rustfs-to-oci"
+              }
+            )
+
+        - record: cluster:oci_dr_sync_age_seconds
+          expr: |
+            time() -
+            cluster:oci_dr_last_success_timestamp_seconds
+
+        - record: cluster:rustfs_filesystem_utilization_percent
+          expr: |
+            100 * (
+              1 -
+              node_filesystem_avail_bytes{
+                instance="100.96.242.26:9100",
+                mountpoint="/var/lib/rustfs"
+              }
+              /
+              node_filesystem_size_bytes{
+                instance="100.96.242.26:9100",
+                mountpoint="/var/lib/rustfs"
+              }
+            )
+
+    # ============================================================
+    # PostgreSQL primary backup monitoring
+    # ============================================================
+
+    - name: cluster-postgres-backup
+      rules:
+        - alert: ClusterPostgresBackupMetricsMissing
+          expr: |
+            absent(cluster:postgres_backup_last_success_timestamp_seconds)
+            or
+            absent(cluster:postgres_backup_last_failure_timestamp_seconds)
+          for: 5m
+          labels:
+            severity: warning
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "PostgreSQL backup metrics are missing"
+            description: >-
+              The Barman plugin backup status cannot be
+              assessed through Prometheus.
+
+        - alert: ClusterPostgresBackupFailed
+          expr: |
+            cluster:postgres_backup_last_failure_timestamp_seconds
+            >
+            cluster:postgres_backup_last_success_timestamp_seconds
+          for: 5m
+          labels:
+            severity: critical
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "Latest PostgreSQL backup failed"
+            description: >-
+              The last recorded backup failure is newer
+              than the last successful backup.
+
+        - alert: ClusterPostgresBackupOverdue
+          expr: |
+            (cluster:postgres_backup_age_seconds > 93600)
+            and
+            (cluster:postgres_backup_age_seconds <= 172800)
+          for: 5m
+          labels:
+            severity: warning
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "PostgreSQL backup overdue"
+            description: >-
+              No successful PostgreSQL backup has been
+              recorded within the last 26 hours.
+
+        - alert: ClusterPostgresBackupCriticallyOverdue
+          expr: |
+            cluster:postgres_backup_age_seconds > 172800
+            or
+            cluster:postgres_backup_last_success_timestamp_seconds <= 0
+          for: 5m
+          labels:
+            severity: critical
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "PostgreSQL backup critically overdue"
+            description: >-
+              No valid successful backup is recorded,
+              or the latest backup is older than 48 hours.
+
+        - alert: ClusterPostgresRecoverabilityPointUnavailable
+          expr: |
+            absent(cluster:postgres_first_recoverability_timestamp_seconds)
+            or
+            cluster:postgres_first_recoverability_timestamp_seconds <= 0
+          for: 5m
+          labels:
+            severity: critical
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "PostgreSQL recoverability point unavailable"
+            description: >-
+              The Barman plugin does not report a valid
+              first recoverability timestamp.
+
+    # ============================================================
+    # PostgreSQL WAL archiving
+    # ============================================================
+
+    - name: cluster-postgres-wal
+      rules:
+        - alert: ClusterPostgresWALArchivingFailed
+          expr: |
+            (
+              cnpg_pg_stat_archiver_last_failed_time{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              }
+              >
+              cnpg_pg_stat_archiver_last_archived_time{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              }
+            )
+            and on (namespace, pod)
+            (
+              cnpg_pg_replication_in_recovery{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              } == 0
+            )
+          for: 5m
+          labels:
+            severity: warning
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "PostgreSQL WAL archiving failure unresolved"
+            description: >-
+              The latest WAL archiving failure on
+              {{ $labels.pod }} is newer than its
+              latest successful archival.
+
+        - alert: ClusterPostgresWALArchivingStale
+          expr: |
+            (
+              cnpg_pg_stat_archiver_seconds_since_last_archival{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              } > 3600
+            )
+            and on (namespace, pod)
+            (
+              cnpg_pg_replication_in_recovery{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              } == 0
+            )
+          for: 15m
+          labels:
+            severity: warning
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "PostgreSQL WAL archival is stale"
+            description: >-
+              The primary has not reported successful
+              WAL archival within the last hour.
+              Verify archive activity and configuration.
+
+        - alert: ClusterPostgresWALArchivingMetricsMissing
+          expr: |
+            (
+              cnpg_pg_replication_in_recovery{
+                namespace="prod-database",
+                job="monitoring/central-postgres-ha"
+              } == 0
+            )
+            unless on (namespace, pod)
+            cnpg_pg_stat_archiver_last_archived_time{
+              namespace="prod-database",
+              job="monitoring/central-postgres-ha"
+            }
+          for: 5m
+          labels:
+            severity: warning
+            domain: backup
+            service: postgres
+          annotations:
+            summary: "Primary PostgreSQL WAL metrics missing"
+            description: >-
+              WAL archival status cannot be assessed
+              for primary instance {{ $labels.pod }}.
+
+    # ============================================================
+    # RustFS primary backup storage
+    # ============================================================
+
+    - name: cluster-rustfs-storage
+      rules:
+        - alert: ClusterRustFSUnavailable
+          expr: |
+            (
+              max(
+                kube_deployment_status_replicas_available{
+                  namespace="object-storage",
+                  deployment="rustfs"
+                }
+              ) or vector(0)
+            ) < 1
+          for: 3m
+          labels:
+            severity: critical
+            domain: backup
+            service: rustfs
+          annotations:
+            summary: "RustFS backup storage unavailable"
+            description: >-
+              No available RustFS deployment replica
+              is reported by Kubernetes monitoring.
+
+        - alert: ClusterRustFSFilesystemHigh
+          expr: |
+            (cluster:rustfs_filesystem_utilization_percent > 80)
+            and
+            (cluster:rustfs_filesystem_utilization_percent <= 90)
+          for: 10m
+          labels:
+            severity: warning
+            domain: storage
+            service: rustfs
+          annotations:
+            summary: "RustFS filesystem utilization above 80%"
+            description: >-
+              RustFS backup filesystem utilization
+              is {{ printf "%.1f" $value }} percent.
+
+        - alert: ClusterRustFSFilesystemCritical
+          expr: |
+            cluster:rustfs_filesystem_utilization_percent > 90
+          for: 5m
+          labels:
+            severity: critical
+            domain: storage
+            service: rustfs
+          annotations:
+            summary: "RustFS filesystem utilization above 90%"
+            description: >-
+              RustFS backup filesystem utilization
+              is {{ printf "%.1f" $value }} percent.
+
+        - alert: ClusterRustFSMountMissing
+          expr: |
+            absent(
+              node_filesystem_size_bytes{
+                instance="100.96.242.26:9100",
+                mountpoint="/var/lib/rustfs"
+              }
+            )
+          for: 5m
+          labels:
+            severity: critical
+            domain: storage
+            service: rustfs
+          annotations:
+            summary: "RustFS backup filesystem mount missing"
+            description: >-
+              The expected RustFS filesystem on cp-1
+              is not visible through node-exporter.
+
+        - alert: ClusterRustFSFilesystemReadOnly
+          expr: |
+            node_filesystem_readonly{
+              instance="100.96.242.26:9100",
+              mountpoint="/var/lib/rustfs"
+            } == 1
+          for: 1m
+          labels:
+            severity: critical
+            domain: storage
+            service: rustfs
+          annotations:
+            summary: "RustFS filesystem is read-only"
+            description: >-
+              PostgreSQL backups and WAL archives may
+              no longer be writable.
+
+    # ============================================================
+    # OCI off-site disaster recovery
+    # ============================================================
+
+    - name: cluster-oci-disaster-recovery
+      rules:
+        - alert: ClusterOCIDRSyncFailed
+          expr: |
+            max by (namespace, job_name) (
+              kube_job_failed{
+                namespace="prod-database",
+                condition="true"
+              } == 1
+            )
+            and on (namespace, job_name)
+            (
+              kube_job_owner{
+                namespace="prod-database",
+                owner_kind="CronJob",
+                owner_name="postgres-backups-rustfs-to-oci",
+                owner_is_controller="true"
+              } == 1
+            )
+            and on (namespace, job_name)
+            (
+              max by (namespace, job_name) (
+                kube_job_status_start_time{
+                  namespace="prod-database",
+                  job_name=~"postgres-backups-rustfs-to-oci-.*"
+                }
+              )
+              >
+              scalar(
+                cluster:oci_dr_last_success_timestamp_seconds
+                or vector(0)
+              )
+            )
+          for: 2m
+          labels:
+            severity: critical
+            domain: disaster-recovery
+            service: oci
+          annotations:
+            summary: "OCI disaster recovery synchronization failed"
+            description: >-
+              Job {{ $labels.job_name }} has failed
+              without a newer successful synchronization.
+
+        - alert: ClusterOCIDRSyncOverdue
+          expr: |
+            (cluster:oci_dr_sync_age_seconds > 93600)
+            and
+            (cluster:oci_dr_sync_age_seconds <= 172800)
+          for: 5m
+          labels:
+            severity: warning
+            domain: disaster-recovery
+            service: oci
+          annotations:
+            summary: "OCI disaster recovery synchronization overdue"
+            description: >-
+              No successful off-site backup synchronization
+              has been recorded within the last 26 hours.
+
+        - alert: ClusterOCIDRSyncCriticallyOverdue
+          expr: |
+            cluster:oci_dr_sync_age_seconds > 172800
+            or
+            cluster:oci_dr_last_success_timestamp_seconds <= 0
+          for: 5m
+          labels:
+            severity: critical
+            domain: disaster-recovery
+            service: oci
+          annotations:
+            summary: "OCI disaster recovery critically overdue"
+            description: >-
+              The latest successful off-site synchronization
+              is older than 48 hours or has an invalid timestamp.
+
+        - alert: ClusterOCIDRSuccessTimestampMissing
+          expr: |
+            absent(cluster:oci_dr_last_success_timestamp_seconds)
+          for: 5m
+          labels:
+            severity: critical
+            domain: disaster-recovery
+            service: oci
+          annotations:
+            summary: "OCI synchronization success timestamp missing"
+            description: >-
+              No successful synchronization timestamp
+              is available through Kubernetes monitoring.
+
+        - alert: ClusterOCIDRCronJobMissing
+          expr: |
+            absent(
+              kube_cronjob_info{
+                namespace="prod-database",
+                cronjob="postgres-backups-rustfs-to-oci"
+              }
+            )
+          for: 5m
+          labels:
+            severity: critical
+            domain: disaster-recovery
+            service: oci
+          annotations:
+            summary: "OCI disaster recovery CronJob missing"
+            description: >-
+              The expected RustFS-to-OCI synchronization
+              CronJob is not visible through monitoring.
+
+        - alert: ClusterOCIDRCronJobSuspended
+          expr: |
+            kube_cronjob_spec_suspend{
+              namespace="prod-database",
+              cronjob="postgres-backups-rustfs-to-oci"
+            } == 1
+          for: 5m
+          labels:
+            severity: warning
+            domain: disaster-recovery
+            service: oci
+          annotations:
+            summary: "OCI disaster recovery CronJob suspended"
+            description: >-
+              Scheduled off-site backup synchronization
+              has been suspended.
