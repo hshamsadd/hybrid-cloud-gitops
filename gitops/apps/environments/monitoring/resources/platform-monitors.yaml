@@ -9,12 +9,17 @@ spec:
   namespaceSelector:
     matchNames:
       - argocd
+
   selector:
     matchLabels:
       app.kubernetes.io/name: argocd-metrics
+
   endpoints:
-    - port: metrics
+    - port: http-metrics
+      path: /metrics
       interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
 ---
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
@@ -27,9 +32,11 @@ spec:
   namespaceSelector:
     matchNames:
       - prod-database
+
   selector:
     matchLabels:
       cnpg.io/cluster: central-postgres-ha
+
   podMetricsEndpoints:
     - portNumber: 9187
       interval: 30s
