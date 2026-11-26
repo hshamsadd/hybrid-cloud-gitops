@@ -6,10 +6,34 @@ crds:
 defaultRules:
   create: true
   disabled:
-    # Enable after validating the kubeadm metrics endpoints.
-    KubeControllerManagerDown: true
-    KubeSchedulerDown: true
-    KubeProxyDown: true
+    # Control-plane metrics are collected through
+    # authenticated node-local mTLS proxies.
+    KubeControllerManagerDown: false
+    KubeSchedulerDown: false
+    KubeProxyDown: false
+
+# Disable obsolete direct ServiceMonitors.
+# Keep component rules and dashboards enabled.
+
+kubeEtcd:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+kubeControllerManager:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+kubeScheduler:
+  enabled: true
+  serviceMonitor:
+    enabled: false
+
+kubeProxy:
+  enabled: true
+  serviceMonitor:
+    enabled: false
 
 alertmanager:
   enabled: true
