@@ -116,7 +116,18 @@ grafana:
     passwordKey: ADMIN_PASSWORD
 
   # Enable the Loki datasource when Loki is deployed.
-  additionalDataSources: []
+  additionalDataSources:
+    - name: Loki
+      uid: loki
+      type: loki
+      access: proxy
+      url: http://loki-gateway.logging.svc.cluster.local
+      isDefault: false
+      editable: false
+
+      jsonData:
+        maxLines: 1000
+        timeout: 60
 
   persistence:
     enabled: true
