@@ -1,0 +1,206 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: control-plane-etcd
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: control-plane-metrics-proxy
+
+  endpoints:
+    - port: https-metrics
+      path: /metrics/etcd
+      scheme: https
+      interval: 30s
+      scrapeTimeout: 15s
+
+      tlsConfig:
+        insecureSkipVerify: false
+        ca:
+          secret:
+            name: control-plane-metrics-server-tls
+            key: ca.crt
+        cert:
+          secret:
+            name: control-plane-metrics-prometheus-client-tls
+            key: tls.crt
+        keySecret:
+          name: control-plane-metrics-prometheus-client-tls
+          key: tls.key
+
+      relabelings:
+        - targetLabel: job
+          replacement: kube-etcd
+        - sourceLabels: [__address__]
+          regex: "(.+):19443"
+          targetLabel: instance
+          replacement: "${1}:2381"
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - targetLabel: namespace
+          replacement: kube-system
+        - targetLabel: service
+          replacement: kube-prometheus-stack-kube-etcd
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: control-plane-kube-controller-manager
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: control-plane-metrics-proxy
+
+  endpoints:
+    - port: https-metrics
+      path: /metrics/kube-controller-manager
+      scheme: https
+      interval: 30s
+      scrapeTimeout: 15s
+
+      tlsConfig:
+        insecureSkipVerify: false
+        ca:
+          secret:
+            name: control-plane-metrics-server-tls
+            key: ca.crt
+        cert:
+          secret:
+            name: control-plane-metrics-prometheus-client-tls
+            key: tls.crt
+        keySecret:
+          name: control-plane-metrics-prometheus-client-tls
+          key: tls.key
+
+      relabelings:
+        - targetLabel: job
+          replacement: kube-controller-manager
+        - sourceLabels: [__address__]
+          regex: "(.+):19443"
+          targetLabel: instance
+          replacement: "${1}:10257"
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - targetLabel: namespace
+          replacement: kube-system
+        - targetLabel: service
+          replacement: kube-prometheus-stack-kube-controller-manager
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: control-plane-kube-scheduler
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: control-plane-metrics-proxy
+
+  endpoints:
+    - port: https-metrics
+      path: /metrics/kube-scheduler
+      scheme: https
+      interval: 30s
+      scrapeTimeout: 15s
+
+      tlsConfig:
+        insecureSkipVerify: false
+        ca:
+          secret:
+            name: control-plane-metrics-server-tls
+            key: ca.crt
+        cert:
+          secret:
+            name: control-plane-metrics-prometheus-client-tls
+            key: tls.crt
+        keySecret:
+          name: control-plane-metrics-prometheus-client-tls
+          key: tls.key
+
+      relabelings:
+        - targetLabel: job
+          replacement: kube-scheduler
+        - sourceLabels: [__address__]
+          regex: "(.+):19443"
+          targetLabel: instance
+          replacement: "${1}:10259"
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - targetLabel: namespace
+          replacement: kube-system
+        - targetLabel: service
+          replacement: kube-prometheus-stack-kube-scheduler
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: control-plane-kube-proxy
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - monitoring
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: control-plane-metrics-proxy
+
+  endpoints:
+    - port: https-metrics
+      path: /metrics/kube-proxy
+      scheme: https
+      interval: 30s
+      scrapeTimeout: 15s
+
+      tlsConfig:
+        insecureSkipVerify: false
+        ca:
+          secret:
+            name: control-plane-metrics-server-tls
+            key: ca.crt
+        cert:
+          secret:
+            name: control-plane-metrics-prometheus-client-tls
+            key: tls.crt
+        keySecret:
+          name: control-plane-metrics-prometheus-client-tls
+          key: tls.key
+
+      relabelings:
+        - targetLabel: job
+          replacement: kube-proxy
+        - sourceLabels: [__address__]
+          regex: "(.+):19443"
+          targetLabel: instance
+          replacement: "${1}:10249"
+        - sourceLabels: [__meta_kubernetes_pod_node_name]
+          targetLabel: node
+        - targetLabel: namespace
+          replacement: kube-system
+        - targetLabel: service
+          replacement: kube-prometheus-stack-kube-proxy
