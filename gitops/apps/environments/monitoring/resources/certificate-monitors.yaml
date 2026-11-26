@@ -1,0 +1,39 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cluster-cert-manager
+  namespace: monitoring
+  labels:
+    release: monitoring
+
+spec:
+  namespaceSelector:
+    matchNames:
+      - cert-manager
+
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: cert-manager
+
+    matchExpressions:
+      - key: app.kubernetes.io/name
+        operator: In
+        values:
+          - cert-manager
+          - cainjector
+          - webhook
+
+  endpoints:
+    # Controller and CA injector
+    - port: http-metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
+
+    # Webhook
+    - port: metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http

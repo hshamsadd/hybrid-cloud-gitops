@@ -5,6 +5,8 @@ namespace: monitoring
 resources:
   - backup-dr-rules.yaml
   - blackbox-exporter.yaml
+  - certificate-monitors.yaml
+  - certificate-rules.yaml
   - dashboards-configmap.yaml
   - operational-rules.yaml
   - platform-monitors.yaml

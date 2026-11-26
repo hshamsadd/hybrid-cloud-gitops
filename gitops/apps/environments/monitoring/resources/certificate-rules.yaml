@@ -1,0 +1,103 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cluster-certificate-rules
+  namespace: monitoring
+  labels:
+    release: monitoring
+
+spec:
+  groups:
+    - name: cluster-certificate-lifecycle
+      rules:
+        - alert: ClusterCertificateExpiringSoon
+          expr: |
+            (
+              certmanager_certificate_expiration_timestamp_seconds
+              - time() < 21 * 86400
+            )
+            and
+            (
+              certmanager_certificate_expiration_timestamp_seconds
+              - time() >= 7 * 86400
+            )
+          for: 15m
+          labels:
+            severity: warning
+            domain: security
+          annotations:
+            summary: "Certificate expires within 21 days"
+            description: >-
+              Certificate {{ $labels.namespace }}/{{ $labels.name }}
+              is approaching expiration.
+
+        - alert: ClusterCertificateExpirationCritical
+          expr: |
+            certmanager_certificate_expiration_timestamp_seconds
+            - time() < 7 * 86400
+          for: 5m
+          labels:
+            severity: critical
+            domain: security
+          annotations:
+            summary: "Certificate expiration critical"
+            description: >-
+              Certificate {{ $labels.namespace }}/{{ $labels.name }}
+              expires within seven days or has already expired.
+
+        - alert: ClusterCertificateNotReady
+          expr: |
+            certmanager_certificate_ready_status{
+              condition=~"False|Unknown"
+            } == 1
+          for: 15m
+          labels:
+            severity: warning
+            domain: security
+          annotations:
+            summary: "Certificate is not ready"
+            description: >-
+              Certificate {{ $labels.namespace }}/{{ $labels.name }}
+              has a readiness condition of {{ $labels.condition }}.
+
+        - alert: ClusterCertificateMetricsUnavailable
+          expr: |
+            absent(certmanager_certificate_expiration_timestamp_seconds)
+          for: 5m
+          labels:
+            severity: critical
+            domain: security
+          annotations:
+            summary: "Certificate lifecycle monitoring unavailable"
+            description: >-
+              Prometheus cannot assess certificate expiration
+              because cert-manager certificate metrics are missing.
+
+        - alert: ClusterControlPlaneCertificateMetricsMissing
+          expr: |
+            absent(
+              certmanager_certificate_expiration_timestamp_seconds{
+                name="control-plane-metrics-server"
+              }
+            )
+            or
+            absent(
+              certmanager_certificate_expiration_timestamp_seconds{
+                name="control-plane-metrics-prometheus-client"
+              }
+            )
+            or
+            absent(
+              certmanager_certificate_expiration_timestamp_seconds{
+                name="control-plane-metrics-client-ca"
+              }
+            )
+          for: 5m
+          labels:
+            severity: critical
+            domain: security
+          annotations:
+            summary: "Control-plane certificate monitoring missing"
+            description: >-
+              Expected certificate {{ $labels.name }}
+              is missing from certificate expiration monitoring.
