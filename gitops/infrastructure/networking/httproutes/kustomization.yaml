@@ -5,4 +5,5 @@ resources:
   - home-http-redirection.yaml
   - routes-docker.yaml
   - routes-media.yaml
+  - routes-monitoring.yaml
   - routes-production.yaml
