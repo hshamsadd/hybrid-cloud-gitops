@@ -1,0 +1,203 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cluster-logging-rules
+  namespace: monitoring
+  labels:
+    release: monitoring
+
+spec:
+  groups:
+    - name: cluster-logging-availability
+      rules:
+        - alert: ClusterLokiUnavailable
+          expr: |
+            (
+              sum(up{namespace="logging",job="loki"})
+              or vector(0)
+            ) < 1
+          for: 3m
+          labels:
+            severity: critical
+            domain: logging
+            service: loki
+          annotations:
+            summary: "Loki is unavailable or its metrics are missing"
+            description: >-
+              Loki has no healthy Prometheus scrape targets.
+              Centralized log ingestion and querying may be unavailable.
+
+        - alert: ClusterLokiGatewayUnavailable
+          expr: |
+            (
+              sum(up{
+                namespace="logging",
+                job="loki-gateway-exporter"
+              }) or vector(0)
+            ) < 1
+          for: 3m
+          labels:
+            severity: critical
+            domain: logging
+            service: loki-gateway
+          annotations:
+            summary: "Loki gateway metrics endpoint is unavailable"
+            description: >-
+              Inspect the gateway Deployment, exporter and service endpoints.
+
+        - alert: ClusterAlloyMetricsDegraded
+          expr: |
+            (
+              sum(up{namespace="logging",job="alloy"})
+              or vector(0)
+            ) < 3
+          for: 5m
+          labels:
+            severity: warning
+            domain: logging
+            service: alloy
+          annotations:
+            summary: "Fewer than three Alloy scrape targets are healthy"
+            description: >-
+              One or more expected node-local log collectors
+              cannot be monitored.
+
+        - alert: ClusterAlloyEventsUnavailable
+          expr: |
+            (
+              sum(up{namespace="logging",job="alloy-events"})
+              or vector(0)
+            ) < 1
+          for: 5m
+          labels:
+            severity: warning
+            domain: logging
+            service: alloy-events
+          annotations:
+            summary: "Kubernetes event collector metrics are unavailable"
+            description: >-
+              Inspect the Alloy Events Deployment and event collection pipeline.
+
+    - name: cluster-logging-delivery
+      rules:
+        - alert: ClusterAlloyLogDeliveryFailed
+          expr: |
+            sum by (job, pod, node) (
+              increase(loki_write_dropped_entries_total{
+                namespace="logging",
+                job=~"alloy|alloy-events"
+              }[5m])
+            ) > 0
+          for: 1m
+          labels:
+            severity: warning
+            domain: logging
+          annotations:
+            summary: 'Log delivery failure: {{ $labels.pod }}'
+            description: >-
+              Alloy has dropped log entries after unsuccessful delivery.
+              Inspect collector logs and Loki ingestion responses.
+
+        - alert: ClusterLokiRejectedLogEntries
+          expr: |
+            sum by (reason) (
+              increase(loki_discarded_samples_total{
+                namespace="logging",
+                job="loki"
+              }[5m])
+            ) > 0
+          for: 1m
+          labels:
+            severity: warning
+            domain: logging
+            service: loki
+          annotations:
+            summary: 'Loki rejected log entries: {{ $labels.reason }}'
+            description: >-
+              Loki rejected incoming log entries.
+              Inspect ingestion limits and collector configuration.
+
+    - name: cluster-logging-storage
+      rules:
+        - alert: ClusterLokiFilesystemHigh
+          expr: |
+            (
+              100 *
+              (
+                1 -
+                node_filesystem_avail_bytes{
+                  mountpoint="/mnt/loki-data"
+                }
+                /
+                node_filesystem_size_bytes{
+                  mountpoint="/mnt/loki-data"
+                }
+              )
+            ) > 80
+          for: 10m
+          labels:
+            severity: warning
+            domain: storage
+            service: loki
+          annotations:
+            summary: "Loki filesystem exceeds 80% usage"
+            description: >-
+              Review ingestion volume, retention and filesystem capacity.
+
+        - alert: ClusterLokiFilesystemCritical
+          expr: |
+            (
+              100 *
+              (
+                1 -
+                node_filesystem_avail_bytes{
+                  mountpoint="/mnt/loki-data"
+                }
+                /
+                node_filesystem_size_bytes{
+                  mountpoint="/mnt/loki-data"
+                }
+              )
+            ) > 90
+          for: 5m
+          labels:
+            severity: critical
+            domain: storage
+            service: loki
+          annotations:
+            summary: "Loki filesystem exceeds 90% usage"
+            description: >-
+              Loki persistent storage is approaching exhaustion.
+              Investigate immediately.
+
+        - alert: ClusterLokiMountMissing
+          expr: |
+            absent(node_filesystem_size_bytes{
+              instance="100.96.242.26:9100",
+              mountpoint="/mnt/loki-data"
+            })
+          for: 5m
+          labels:
+            severity: critical
+            domain: storage
+            service: loki
+          annotations:
+            summary: "Loki filesystem metrics are missing"
+            description: >-
+              Verify node exporter availability and the dedicated
+              Loki filesystem mount on cp-1.
+
+        - alert: ClusterLokiFilesystemReadOnly
+          expr: |
+            node_filesystem_readonly{
+              mountpoint="/mnt/loki-data"
+            } == 1
+          for: 1m
+          labels:
+            severity: critical
+            domain: storage
+            service: loki
+          annotations:
+            summary: "Loki filesystem has become read-only"
+            description: >-
+              Inspect filesystem health and host kernel messages on cp-1.

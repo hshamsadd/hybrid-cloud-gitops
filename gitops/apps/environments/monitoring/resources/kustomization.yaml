@@ -7,6 +7,8 @@ resources:
   - dashboards-configmap.yaml
   - operational-rules.yaml
   - platform-monitors.yaml
+  - logging-monitors.yaml
+  - logging-rules.yaml
   # Enable only after the development health database
   # and its Vault-managed Grafana datasource exist.
   # - health-dashboard.yaml

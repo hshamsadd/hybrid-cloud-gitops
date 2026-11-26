@@ -1,0 +1,38 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cluster-logging
+  namespace: monitoring
+  labels:
+    release: monitoring
+
+spec:
+  namespaceSelector:
+    matchNames:
+      - logging
+
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/instance
+        operator: In
+        values:
+          - loki
+          - alloy
+          - alloy-events
+
+  endpoints:
+    - port: http-metrics
+      path: /metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      scheme: http
+
+      relabelings:
+        - sourceLabels:
+            - __meta_kubernetes_service_name
+          regex: "loki|loki-gateway-exporter|alloy|alloy-events"
+          action: keep
+
+        - sourceLabels:
+            - __meta_kubernetes_pod_node_name
+          targetLabel: node
