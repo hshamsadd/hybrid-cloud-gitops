@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - cnpg-local
   - monitoring-local
+  - loki-local
