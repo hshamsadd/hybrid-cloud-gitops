@@ -1,0 +1,109 @@
+# Dedicated CA for Prometheus client authentication.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: control-plane-metrics-client-ca
+  namespace: monitoring
+spec:
+  secretName: control-plane-metrics-client-ca
+
+  commonName: control-plane-metrics-client-ca
+  isCA: true
+
+  duration: 43800h
+  renewBefore: 2160h
+
+  privateKey:
+    algorithm: RSA
+    size: 3072
+    rotationPolicy: Never
+
+  usages:
+    - cert sign
+    - crl sign
+
+  issuerRef:
+    name: local-selfsigned-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io
+
+---
+# Namespace-scoped issuer for metrics client certificates.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: control-plane-metrics-client-issuer
+  namespace: monitoring
+spec:
+  ca:
+    secretName: control-plane-metrics-client-ca
+
+---
+# Prometheus client identity.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: control-plane-metrics-prometheus-client
+  namespace: monitoring
+spec:
+  secretName: control-plane-metrics-prometheus-client-tls
+
+  commonName: prometheus-control-plane-metrics
+
+  duration: 2160h
+  renewBefore: 360h
+
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+
+  usages:
+    - digital signature
+    - client auth
+
+  issuerRef:
+    name: control-plane-metrics-client-issuer
+    kind: Issuer
+    group: cert-manager.io
+
+---
+# Shared server identity for the three metrics proxies.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: control-plane-metrics-server
+  namespace: monitoring
+spec:
+  secretName: control-plane-metrics-server-tls
+
+  commonName: control-plane-metrics.monitoring.svc.cluster.local
+
+  dnsNames:
+    - control-plane-metrics
+    - control-plane-metrics.monitoring
+    - control-plane-metrics.monitoring.svc
+    - control-plane-metrics.monitoring.svc.cluster.local
+
+  ipAddresses:
+    - 100.96.242.26
+    - 100.110.252.128
+    - 100.94.66.25
+
+  duration: 2160h
+  renewBefore: 360h
+
+  privateKey:
+    algorithm: RSA
+    size: 2048
+    rotationPolicy: Always
+
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+
+  issuerRef:
+    name: local-ca-issuer
+    kind: ClusterIssuer
+    group: cert-manager.io

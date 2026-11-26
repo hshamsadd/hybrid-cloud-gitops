@@ -9,6 +9,7 @@ resources:
   - platform-monitors.yaml
   - logging-monitors.yaml
   - logging-rules.yaml
+  - control-plane-metrics
   # Enable only after the development health database
   # and its Vault-managed Grafana datasource exist.
   # - health-dashboard.yaml
