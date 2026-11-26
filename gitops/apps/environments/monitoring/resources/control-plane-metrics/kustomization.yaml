@@ -6,3 +6,6 @@ namespace: monitoring
 resources:
   - certificates.yaml
   - rbac.yaml
+  - configmap.yaml
+  - daemonset.yaml
+  - service.yaml
