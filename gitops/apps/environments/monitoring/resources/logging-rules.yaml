@@ -24,8 +24,7 @@ spec:
           annotations:
             summary: "Loki is unavailable or its metrics are missing"
             description: >-
-              Loki has no healthy Prometheus scrape targets.
-              Centralized log ingestion and querying may be unavailable.
+              Loki has no healthy Prometheus scrape targets. Centralized log ingestion and querying may be unavailable.
 
         - alert: ClusterLokiGatewayUnavailable
           expr: |
@@ -59,8 +58,7 @@ spec:
           annotations:
             summary: "Fewer than three Alloy scrape targets are healthy"
             description: >-
-              One or more expected node-local log collectors
-              cannot be monitored.
+              One or more expected node-local log collectors cannot be monitored.
 
         - alert: ClusterAlloyEventsUnavailable
           expr: |
@@ -95,8 +93,7 @@ spec:
           annotations:
             summary: 'Log delivery failure: {{ $labels.pod }}'
             description: >-
-              Alloy has dropped log entries after unsuccessful delivery.
-              Inspect collector logs and Loki ingestion responses.
+              Alloy has dropped log entries after unsuccessful delivery. Inspect collector logs and Loki ingestion responses.
 
         - alert: ClusterLokiRejectedLogEntries
           expr: |
@@ -114,8 +111,7 @@ spec:
           annotations:
             summary: 'Loki rejected log entries: {{ $labels.reason }}'
             description: >-
-              Loki rejected incoming log entries.
-              Inspect ingestion limits and collector configuration.
+              Loki rejected incoming log entries. Inspect ingestion limits and collector configuration.
 
     - name: cluster-logging-storage
       rules:
@@ -167,8 +163,7 @@ spec:
           annotations:
             summary: "Loki filesystem exceeds 90% usage"
             description: >-
-              Loki persistent storage is approaching exhaustion.
-              Investigate immediately.
+              Loki persistent storage is approaching exhaustion. Investigate immediately.
 
         - alert: ClusterLokiMountMissing
           expr: |
@@ -184,8 +179,7 @@ spec:
           annotations:
             summary: "Loki filesystem metrics are missing"
             description: >-
-              Verify node exporter availability and the dedicated
-              Loki filesystem mount on cp-1.
+              Verify node exporter availability and the dedicated Loki filesystem mount on cp-1.
 
         - alert: ClusterLokiFilesystemReadOnly
           expr: |
@@ -201,3 +195,75 @@ spec:
             summary: "Loki filesystem has become read-only"
             description: >-
               Inspect filesystem health and host kernel messages on cp-1.
+
+    - name: cluster-logging-retention
+      rules:
+        - alert: ClusterLokiCompactorUnavailable
+          expr: |
+            (
+              sum(loki_boltdb_shipper_compactor_running{
+                namespace="logging",
+                job="loki"
+              }) or vector(0)
+            ) != 1
+          for: 5m
+          labels:
+            severity: critical
+            domain: logging
+            service: loki
+          annotations:
+            summary: "Loki does not have exactly one running compactor"
+            description: >-
+              Compaction and retention operations may be unavailable or incorrectly configured.
+
+        - alert: ClusterLokiCompactionStalled
+          expr: |
+            (
+              time() -
+              loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds{
+                namespace="logging",
+                job="loki"
+              }
+            ) > 3600
+            or
+            absent(
+              loki_boltdb_shipper_compact_tables_operation_last_successful_run_timestamp_seconds{
+                namespace="logging",
+                job="loki"
+              }
+            )
+          for: 15m
+          labels:
+            severity: warning
+            domain: logging
+            service: loki
+          annotations:
+            summary: "Loki compaction has stalled"
+            description: >-
+              No successful compaction operation has been recorded within the expected interval, or its metrics are missing.
+
+        - alert: ClusterLokiRetentionStalled
+          expr: |
+            (
+              time() -
+              loki_compactor_apply_retention_last_successful_run_timestamp_seconds{
+                namespace="logging",
+                job="loki"
+              }
+            ) > 3600
+            or
+            absent(
+              loki_compactor_apply_retention_last_successful_run_timestamp_seconds{
+                namespace="logging",
+                job="loki"
+              }
+            )
+          for: 15m
+          labels:
+            severity: warning
+            domain: logging
+            service: loki
+          annotations:
+            summary: "Loki retention operations have stalled"
+            description: >-
+              No successful retention operation has been recorded within the expected interval, or its metrics are missing. Expired logs may accumulate on persistent storage.
