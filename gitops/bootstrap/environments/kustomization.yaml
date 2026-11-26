@@ -6,5 +6,5 @@ resources:
   - namespaces.yaml
   - production.yaml
   - monitoring.yaml
-  #- logging.yaml
+  - logging.yaml
   #- security.yaml
