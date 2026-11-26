@@ -8,6 +8,7 @@ resources:
   - certificate-monitors.yaml
   - certificate-rules.yaml
   - dashboards-configmap.yaml
+  - observability-dashboards-configmap.yaml
   - operational-rules.yaml
   - platform-monitors.yaml
   - logging-monitors.yaml
