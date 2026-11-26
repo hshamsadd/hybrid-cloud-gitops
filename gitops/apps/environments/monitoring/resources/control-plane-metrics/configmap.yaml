@@ -1,238 +1,243 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: control-plane-metrics-proxy
-  namespace: monitoring
+    name: control-plane-metrics-proxy
+    namespace: monitoring
 
 data:
-  proxy.py: |
-    import http.client
-    import os
-    import socket
-    import ssl
-    import threading
+    proxy.py: |
+        import http.client
+        import os
+        import socket
+        import ssl
+        import threading
 
-    from http.server import BaseHTTPRequestHandler, HTTPServer
-    from socketserver import ThreadingMixIn
-    from pathlib import Path
+        from http.server import BaseHTTPRequestHandler, HTTPServer
+        from socketserver import ThreadingMixIn
+        from pathlib import Path
 
-    LISTEN_ADDRESS = os.environ["NODE_IP"]
-    LISTEN_PORT = 19443
+        LISTEN_ADDRESS = os.environ["NODE_IP"]
+        LISTEN_PORT = 19443
 
-    SERVER_CERT = "/tls/server/tls.crt"
-    SERVER_KEY = "/tls/server/tls.key"
-    CLIENT_CA = "/tls/client-ca/ca.crt"
-    TOKEN_FILE = "/var/run/metrics-auth/token"
+        SERVER_CERT = "/tls/server/tls.crt"
+        SERVER_KEY = "/tls/server/tls.key"
+        CLIENT_CA = "/tls/client-ca/ca.crt"
+        TOKEN_FILE = "/var/run/metrics-auth/token"
 
-    CLIENT_CN = "prometheus-control-plane-metrics"
+        CLIENT_CN = "prometheus-control-plane-metrics"
 
-    UPSTREAM_TIMEOUT = 8
-    MAX_RESPONSE_BYTES = 32 * 1024 * 1024
+        UPSTREAM_TIMEOUT = 8
+        MAX_RESPONSE_BYTES = 32 * 1024 * 1024
 
-    UPSTREAMS = {
-        "/metrics/etcd": (2381, False),
-        "/metrics/kube-controller-manager": (10257, True),
-        "/metrics/kube-scheduler": (10259, True),
-        "/metrics/kube-proxy": (10249, False),
-    }
+        UPSTREAMS = {
+            "/metrics/etcd": (2381, False),
+            "/metrics/kube-controller-manager": (10257, True),
+            "/metrics/kube-scheduler": (10259, True),
+            "/metrics/kube-proxy": (10249, False),
+        }
 
-    # Accepted exception: dynamically generated serving
-    # certificates on these two loopback-only endpoints.
-    LOCAL_TLS_CONTEXT = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    LOCAL_TLS_CONTEXT.check_hostname = False
-    LOCAL_TLS_CONTEXT.verify_mode = ssl.CERT_NONE
-    LOCAL_TLS_CONTEXT.minimum_version = ssl.TLSVersion.TLSv1_2
+        # Accepted exception: dynamically generated serving
+        # certificates on these two loopback-only endpoints.
+        LOCAL_TLS_CONTEXT = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        LOCAL_TLS_CONTEXT.check_hostname = False
+        LOCAL_TLS_CONTEXT.verify_mode = ssl.CERT_NONE
+        LOCAL_TLS_CONTEXT.minimum_version = ssl.TLSVersion.TLSv1_2
 
-    def build_server_context():
-        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-        context.minimum_version = ssl.TLSVersion.TLSv1_2
-        context.verify_mode = ssl.CERT_REQUIRED
-        context.load_verify_locations(cafile=CLIENT_CA)
-        context.load_cert_chain(
-            certfile=SERVER_CERT,
-            keyfile=SERVER_KEY,
-        )
-        return context
-
-    class MetricsHandler(BaseHTTPRequestHandler):
-        protocol_version = "HTTP/1.0"
-        server_version = "metrics-proxy"
-        sys_version = ""
-
-        def log_message(self, fmt, *args):
-            print(
-                f"{self.client_address[0]} {fmt % args}",
-                flush=True,
+        def build_server_context():
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.minimum_version = ssl.TLSVersion.TLSv1_2
+            context.verify_mode = ssl.CERT_REQUIRED
+            context.load_verify_locations(cafile=CLIENT_CA)
+            context.load_cert_chain(
+                certfile=SERVER_CERT,
+                keyfile=SERVER_KEY,
             )
+            return context
 
-        def do_GET(self):
-            self.close_connection = True
+        class MetricsHandler(BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.0"
+            server_version = "metrics-proxy"
+            sys_version = ""
 
-            peer = self.connection.getpeercert()
-
-            common_names = [
-                value
-                for rdn in peer.get("subject", ())
-                for key, value in rdn
-                if key == "commonName"
-            ]
-
-            if common_names != [CLIENT_CN]:
-                self.send_error(403)
-                return
-
-            if self.path not in UPSTREAMS:
-                self.send_error(404)
-                return
-
-            port, use_tls = UPSTREAMS[self.path]
-
-            connection = None
-
-            try:
-                headers = {
-                    "Accept": "text/plain",
-                    "Connection": "close",
-                }
-
-                if use_tls:
-                    token = Path(TOKEN_FILE).read_text().strip()
-
-                    if not token:
-                        raise ValueError("Empty authentication token")
-
-                    headers["Authorization"] = f"Bearer {token}"
-
-                    connection = http.client.HTTPSConnection(
-                        "127.0.0.1",
-                        port,
-                        timeout=UPSTREAM_TIMEOUT,
-                        context=LOCAL_TLS_CONTEXT,
-                    )
-                else:
-                    connection = http.client.HTTPConnection(
-                        "127.0.0.1",
-                        port,
-                        timeout=UPSTREAM_TIMEOUT,
-                    )
-
-                connection.request(
-                    "GET",
-                    "/metrics",
-                    headers=headers,
+            def log_message(self, fmt, *args):
+                print(
+                    f"{self.client_address[0]} {fmt % args}",
+                    flush=True,
                 )
 
-                response = connection.getresponse()
+            def do_GET(self):
+                self.close_connection = True
 
-                if response.status != 200:
+                peer = self.connection.getpeercert()
+
+                common_names = [
+                    value
+                    for rdn in peer.get("subject", ())
+                    for key, value in rdn
+                    if key == "commonName"
+                ]
+
+                if common_names != [CLIENT_CN]:
+                    self.send_error(403)
+                    return
+
+                if self.path not in UPSTREAMS:
+                    self.send_error(404)
+                    return
+
+                port, use_tls = UPSTREAMS[self.path]
+
+                connection = None
+
+                try:
+                    headers = {
+                        "Accept": "text/plain",
+                        "Connection": "close",
+                    }
+
+                    if use_tls:
+                        token = Path(TOKEN_FILE).read_text().strip()
+
+                        if not token:
+                            raise ValueError("Empty authentication token")
+
+                        headers["Authorization"] = f"Bearer {token}"
+
+                        connection = http.client.HTTPSConnection(
+                            "127.0.0.1",
+                            port,
+                            timeout=UPSTREAM_TIMEOUT,
+                            context=LOCAL_TLS_CONTEXT,
+                        )
+                    else:
+                        connection = http.client.HTTPConnection(
+                            "127.0.0.1",
+                            port,
+                            timeout=UPSTREAM_TIMEOUT,
+                        )
+
+                    connection.request(
+                        "GET",
+                        "/metrics",
+                        headers=headers,
+                    )
+
+                    response = connection.getresponse()
+
+                    if response.status != 200:
+                        print(
+                            f"Upstream {port}: HTTP {response.status}",
+                            flush=True,
+                        )
+                        self.send_error(502)
+                        return
+
+                    body = response.read(MAX_RESPONSE_BYTES + 1)
+
+                    if len(body) > MAX_RESPONSE_BYTES:
+                        self.send_error(502)
+                        return
+
+                    content_type = response.getheader(
+                        "Content-Type",
+                        "text/plain; version=0.0.4",
+                    )
+
+                except Exception as exc:
                     print(
-                        f"Upstream {port}: HTTP {response.status}",
+                        f"Upstream {port}: {type(exc).__name__}",
                         flush=True,
                     )
                     self.send_error(502)
                     return
 
-                body = response.read(MAX_RESPONSE_BYTES + 1)
+                finally:
+                    if connection is not None:
+                        connection.close()
 
-                if len(body) > MAX_RESPONSE_BYTES:
-                    self.send_error(502)
+                self.send_response(200)
+                self.send_header("Content-Type", content_type)
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header("Connection", "close")
+                self.end_headers()
+                self.wfile.write(body)
+
+            def do_POST(self):
+                self.send_error(405)
+
+            do_PUT = do_POST
+            do_DELETE = do_POST
+            do_PATCH = do_POST
+            do_HEAD = do_POST
+            do_OPTIONS = do_POST
+            do_CONNECT = do_POST
+            do_TRACE = do_POST
+
+        class MetricsServer(ThreadingMixIn, HTTPServer):
+            daemon_threads = True
+            allow_reuse_address = True
+            request_queue_size = 16
+
+            def __init__(self, address, handler):
+                self.slots = threading.BoundedSemaphore(4)
+                super().__init__(address, handler)
+
+            def process_request(self, request, client_address):
+                if not self.slots.acquire(blocking=False):
+                    self.shutdown_request(request)
                     return
 
-                content_type = response.getheader(
-                    "Content-Type",
-                    "text/plain; version=0.0.4",
-                )
+                try:
+                    super().process_request(request, client_address)
+                except Exception:
+                    self.slots.release()
+                    raise
 
-            except Exception as exc:
-                print(
-                    f"Upstream {port}: {type(exc).__name__}",
-                    flush=True,
-                )
-                self.send_error(502)
-                return
+            def process_request_thread(self, request, client_address):
+                try:
+                    request.settimeout(10)
 
-            finally:
-                if connection is not None:
-                    connection.close()
+                    # Load current projected TLS material for each
+                    # connection, including renewed certificates.
+                    context = build_server_context()
 
-            self.send_response(200)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(body)))
-            self.send_header("Connection", "close")
-            self.end_headers()
-            self.wfile.write(body)
+                    with context.wrap_socket(
+                        request,
+                        server_side=True,
+                    ) as tls_socket:
+                        self.finish_request(
+                            tls_socket,
+                            client_address,
+                        )
 
-        def do_POST(self):
-            self.send_error(405)
+                except ssl.SSLEOFError:
+                    # TCP health probes and early client disconnects
+                    # may close the connection before TLS negotiation.
+                    pass
 
-        do_PUT = do_POST
-        do_DELETE = do_POST
-        do_PATCH = do_POST
-        do_HEAD = do_POST
-        do_OPTIONS = do_POST
-        do_CONNECT = do_POST
-        do_TRACE = do_POST
-
-    class MetricsServer(ThreadingMixIn, HTTPServer):
-        daemon_threads = True
-        allow_reuse_address = True
-        request_queue_size = 16
-
-        def __init__(self, address, handler):
-            self.slots = threading.BoundedSemaphore(4)
-            super().__init__(address, handler)
-
-        def process_request(self, request, client_address):
-            if not self.slots.acquire(blocking=False):
-                self.shutdown_request(request)
-                return
-
-            try:
-                super().process_request(request, client_address)
-            except Exception:
-                self.slots.release()
-                raise
-
-        def process_request_thread(self, request, client_address):
-            try:
-                request.settimeout(10)
-
-                # Load current projected TLS material for each
-                # connection, including renewed certificates.
-                context = build_server_context()
-
-                with context.wrap_socket(
-                    request,
-                    server_side=True,
-                ) as tls_socket:
-                    self.finish_request(
-                        tls_socket,
-                        client_address,
+                except (ssl.SSLError, OSError, ValueError) as exc:
+                    print(
+                        f"Connection rejected: {type(exc).__name__}",
+                        flush=True,
                     )
 
-            except (ssl.SSLError, OSError, ValueError) as exc:
-                print(
-                    f"Connection rejected: {type(exc).__name__}",
-                    flush=True,
-                )
+                finally:
+                    self.shutdown_request(request)
+                    self.slots.release()
 
-            finally:
-                self.shutdown_request(request)
-                self.slots.release()
+        if __name__ == "__main__":
+            # Fail startup if certificate material is invalid.
+            build_server_context()
 
-    if __name__ == "__main__":
-        # Fail startup if certificate material is invalid.
-        build_server_context()
+            server = MetricsServer(
+                (LISTEN_ADDRESS, LISTEN_PORT),
+                MetricsHandler,
+            )
 
-        server = MetricsServer(
-            (LISTEN_ADDRESS, LISTEN_PORT),
-            MetricsHandler,
-        )
+            print(
+                f"Metrics proxy listening on "
+                f"{LISTEN_ADDRESS}:{LISTEN_PORT}",
+                flush=True,
+            )
 
-        print(
-            f"Metrics proxy listening on "
-            f"{LISTEN_ADDRESS}:{LISTEN_PORT}",
-            flush=True,
-        )
-
-        server.serve_forever()
+            server.serve_forever()

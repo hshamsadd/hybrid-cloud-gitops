@@ -1,0 +1,80 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: control-plane-operational-rules
+  namespace: monitoring
+  labels:
+    release: monitoring
+
+spec:
+  groups:
+    - name: cluster-control-plane-availability
+      rules:
+        - alert: ClusterControlPlaneMetricsTargetDown
+          expr: |
+            up{
+              job=~"kube-etcd|kube-controller-manager|kube-scheduler|kube-proxy"
+            } == 0
+          for: 3m
+          labels:
+            severity: warning
+            domain: control-plane
+          annotations:
+            summary: "Control-plane metrics target unavailable"
+            description: >-
+              Prometheus cannot scrape {{ $labels.job }}
+              on {{ $labels.node }} at {{ $labels.instance }}.
+
+        - alert: ClusterControlPlaneMetricsCoverageDegraded
+          expr: |
+            (
+              sum by (job) (
+                up{
+                  job=~"kube-etcd|kube-controller-manager|kube-scheduler|kube-proxy"
+                }
+              ) < 3
+            )
+            or absent(up{job="kube-etcd"})
+            or absent(up{job="kube-controller-manager"})
+            or absent(up{job="kube-scheduler"})
+            or absent(up{job="kube-proxy"})
+          for: 5m
+          labels:
+            severity: warning
+            domain: control-plane
+          annotations:
+            summary: "Control-plane metrics coverage degraded"
+            description: >-
+              {{ $labels.job }} has fewer than three healthy
+              scrape targets or its monitoring series are missing.
+
+        - alert: ClusterEtcdLeaderUnavailable
+          expr: |
+            etcd_server_has_leader{job="kube-etcd"} == 0
+          for: 2m
+          labels:
+            severity: critical
+            domain: control-plane
+            service: etcd
+          annotations:
+            summary: "Etcd member cannot identify a leader"
+            description: >-
+              Etcd member {{ $labels.instance }} has reported
+              no Raft leader for at least two minutes.
+
+        - alert: ClusterEtcdMonitoringUnavailable
+          expr: |
+            (
+              sum(up{job="kube-etcd"}) or vector(0)
+            ) == 0
+          for: 3m
+          labels:
+            severity: critical
+            domain: control-plane
+            service: etcd
+          annotations:
+            summary: "All etcd monitoring targets are unavailable"
+            description: >-
+              Prometheus has no healthy etcd scrape targets.
+              Etcd availability and quorum cannot be assessed
+              through monitoring.

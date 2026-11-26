@@ -18,6 +18,8 @@ spec:
 
   template:
     metadata:
+      annotations:
+        monitoring.home/proxy-config-revision: "2"
       labels:
         app.kubernetes.io/name: control-plane-metrics-proxy
 
@@ -65,6 +67,7 @@ spec:
             - name: NODE_IP
               valueFrom:
                 fieldRef:
+                  apiVersion: v1
                   fieldPath: status.hostIP
 
             - name: PYTHONDONTWRITEBYTECODE
@@ -135,12 +138,12 @@ spec:
         - name: proxy-code
           configMap:
             name: control-plane-metrics-proxy
-            defaultMode: 0444
+            defaultMode: 292
 
         - name: server-tls
           secret:
             secretName: control-plane-metrics-server-tls
-            defaultMode: 0440
+            defaultMode: 288
             items:
               - key: tls.crt
                 path: tls.crt
@@ -150,14 +153,14 @@ spec:
         - name: client-ca
           secret:
             secretName: control-plane-metrics-client-ca
-            defaultMode: 0444
+            defaultMode: 292
             items:
               - key: tls.crt
                 path: ca.crt
 
         - name: metrics-auth
           projected:
-            defaultMode: 0440
+            defaultMode: 288
             sources:
               - serviceAccountToken:
                   path: token
