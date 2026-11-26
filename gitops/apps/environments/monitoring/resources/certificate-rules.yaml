@@ -28,7 +28,7 @@ spec:
           annotations:
             summary: "Certificate expires within 21 days"
             description: >-
-              Certificate {{ $labels.namespace }}/{{ $labels.name }}
+              Certificate {{ $labels.exported_namespace }}/{{ $labels.name }}
               is approaching expiration.
 
         - alert: ClusterCertificateExpirationCritical
@@ -42,7 +42,7 @@ spec:
           annotations:
             summary: "Certificate expiration critical"
             description: >-
-              Certificate {{ $labels.namespace }}/{{ $labels.name }}
+              Certificate {{ $labels.exported_namespace }}/{{ $labels.name }}
               expires within seven days or has already expired.
 
         - alert: ClusterCertificateNotReady
@@ -57,7 +57,7 @@ spec:
           annotations:
             summary: "Certificate is not ready"
             description: >-
-              Certificate {{ $labels.namespace }}/{{ $labels.name }}
+              Certificate {{ $labels.exported_namespace }}/{{ $labels.name }}
               has a readiness condition of {{ $labels.condition }}.
 
         - alert: ClusterCertificateMetricsUnavailable
@@ -77,19 +77,19 @@ spec:
           expr: |
             absent(
               certmanager_certificate_expiration_timestamp_seconds{
-                name="control-plane-metrics-server"
+                name="control-plane-metrics-server", exported_namespace="monitoring"
               }
             )
             or
             absent(
               certmanager_certificate_expiration_timestamp_seconds{
-                name="control-plane-metrics-prometheus-client"
+                name="control-plane-metrics-prometheus-client", exported_namespace="monitoring"
               }
             )
             or
             absent(
               certmanager_certificate_expiration_timestamp_seconds{
-                name="control-plane-metrics-client-ca"
+                name="control-plane-metrics-client-ca", exported_namespace="monitoring"
               }
             )
           for: 5m
