@@ -118,6 +118,11 @@ alloy:
       loki.process "pod_logs" {
         stage.cri {}
 
+        stage.drop {
+          older_than          = "167h"
+          drop_counter_reason = "expired_log_entry"
+        }
+
         stage.static_labels {
           values = {
             cluster = "cluster",
